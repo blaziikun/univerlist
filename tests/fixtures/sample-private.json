@@ -1,0 +1,8 @@
+{
+  "id": "sample-private",
+  "name": "A private extension (test)",
+  "version": "1.0.0",
+  "private": true,
+  "permissions": ["storage"],
+  "code": "univerlist.storage.set('hello', 'world');"
+}

@@ -1,0 +1,13 @@
+const ENV = require('./env.cjs');
+const { chromium } = require('playwright'); const { setup } = require('./mocks.cjs'); const D = __dirname;
+(async () => { const browser = await chromium.launch(ENV.launch);
+  const ctx = await browser.newContext(); await setup(ctx); const page = await ctx.newPage(); const errs = []; page.on('pageerror', e => errs.push(e.message));
+  await page.goto(ENV.APP); await page.waitForTimeout(1000); await page.fill('#wl-name', 'S'); await page.click('[data-act="welcome-done"]');
+  await page.evaluate(() => { addItem({ medium: 'game', title: 'Constructor', platform: 'PC' }); addItem({ medium: 'game', title: 'toString' }); goSettings('data'); }); await page.waitForTimeout(300);
+  const [fc] = await Promise.all([page.waitForEvent('filechooser'), page.click('[data-act="lb-pick"]')]); await fc.setFiles(ENV.FIX + '/lbweird.zip');
+  await page.waitForFunction(() => LB.done || LB.err, null, { timeout: 60000 });
+  const r = await page.evaluate(() => ({ err: LB.err, m: LB.matched, c: [...items.values()].find(b => b.title === 'Constructor').cover }));
+  const ok = (n, c, x = '') => console.log((c ? 'ok   ' : 'FAIL ') + n + (x ? ' | ' + x : ''));
+  ok('a game called "Constructor" matches', !r.err && r.m === 1 && /launchbox/.test(r.c), JSON.stringify(r));
+  ok('no page errors', !errs.length, errs.join('|'));
+  await browser.close(); })();

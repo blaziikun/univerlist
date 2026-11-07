@@ -1,0 +1,14 @@
+// For tests/e2e/account.cjs only: the site with Account & sync switched on, run on this machine (wrangler dev --local,
+// a throwaway database and bucket). Never deployed.
+{
+  "name": "univerlist-test",
+  "main": "../../worker/index.js",
+  "compatibility_date": "2026-06-01",
+  "assets": { "directory": "../../dist", "binding": "ASSETS", "run_worker_first": ["/api/*"], "not_found_handling": "404-page" },
+  "ratelimits": [
+    { "name": "API_RL", "namespace_id": "4401", "simple": { "limit": 600, "period": 60 } },
+    { "name": "AUTH_RL", "namespace_id": "4402", "simple": { "limit": 100, "period": 60 } }
+  ],
+  "d1_databases": [{ "binding": "ACCOUNTS", "database_name": "univerlist-accounts", "database_id": "local-test", "migrations_dir": "../../worker/migrations" }],
+  "r2_buckets": [{ "binding": "LIBRARIES", "bucket_name": "univerlist-libraries" }]
+}

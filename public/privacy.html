@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Privacy and terms · UniverList</title>
+<meta name="description" content="What UniverList keeps, what it doesn't, and the terms of using it.">
+<link rel="icon" href="/icon.svg" type="image/svg+xml">
+<style>
+  :root { --bg: #05060a; --fg: #e8e6e1; --muted: #a09c94; --line: #2a2b31; --accent: #d4ad55; color-scheme: dark light; }
+  @media (prefers-color-scheme: light) { :root { --bg: #faf8f4; --fg: #1d1c1a; --muted: #5d5a54; --line: #ddd8cf; --accent: #8a6a1c; } }
+  body { background: var(--bg); color: var(--fg); font: 16px/1.6 Inter, system-ui, sans-serif; margin: 0; }
+  main { max-width: 720px; margin: 0 auto; padding: 40px 16px 80px; }
+  h1 { font-size: 28px; margin: 0 0 4px; } h2 { font-size: 19px; margin: 32px 0 6px; }
+  p, li { color: var(--fg); } .muted { color: var(--muted); } a { color: var(--accent); }
+  ul { padding-left: 20px; } li { margin: 4px 0; }
+  table { border-collapse: collapse; width: 100%; font-size: 15px; } td, th { border-bottom: 1px solid var(--line); padding: 8px 6px; text-align: left; vertical-align: top; }
+</style>
+</head>
+<body>
+<main>
+<h1>Privacy and terms</h1>
+<p class="muted">Last changed 4 November 2026. Plain words, and true to what the code does: it's all
+<a href="https://univerlist.sayel.dev/source">open source</a>, so you can check.</p>
+
+<h2>Without an account</h2>
+<p>Everything you add stays in your own browser. Nothing is sent to this site. When you look something up (a cover, a
+film's details), your browser asks that catalogue directly (AniList, Open Library and the others), or, for the few that
+need a secret key (TMDB for films and TV, IGDB for games), asks through this site's <code>/api</code>, which adds the
+site's key and passes the question on. It keeps no record of who asked; the answer itself (a film's details, never
+anything about you) is kept for a day so the same lookup isn't made twice. If you add your own key or proxy, your
+browser uses that instead.
+A few sites refuse to share their pictures with web pages; for those, the picture is fetched through
+<a href="https://wsrv.nl/">wsrv.nl</a>, a free image proxy, which then sees that picture's address and your IP address.
+You can switch that off (Settings › Data, sources &amp; keys › Image proxy). The built-in themes' fonts come with the
+app; only if you pick a different font for a theme of your own is it fetched from Google Fonts, which then sees your IP
+address. Those catalogues, wsrv.nl and Google have their own privacy policies.</p>
+
+<h2>With an account (Account &amp; sync: only if you make one)</h2>
+<table>
+  <tr><th>Kept on the server</th><th>Why</th></tr>
+  <tr><td>The name you chose</td><td>To show it to you</td></tr>
+  <tr><td>Your passkey's public key, and sealed copies of the key that encrypts your library (one for your passkey, one for your recovery code, and one for ten minutes while you sign in on another device with a QR code)</td><td>To sign you in, and to let your passkey and recovery code unlock your library. None of them can be opened by the server</td></tr>
+  <tr><td>A one-way fingerprint of a key made from your recovery code</td><td>So your recovery code can sign you in if your passkey is lost. The code itself is never sent</td></tr>
+  <tr><td>Your library, encrypted on your device before it's sent (the last 3 versions, and one from over a day ago), and its size</td><td>To bring it to your other devices. The server can't read it: the keys never leave your devices</td></tr>
+  <tr><td>One session cookie (strictly necessary, no tracking), and a hash of it on the server</td><td>To keep you signed in. It ends after 30 days unused</td></tr>
+  <tr><td>A list of sign-ins and changes to your account, with the kind of device ("Chrome on Mac"), and how much you've synced today</td><td>So you can see what happened, and so nobody can run up the site's costs</td></tr>
+</table>
+<p>Not kept by the app: your library in readable form, your recovery code, your passkeys' secrets, the secret in a QR code, your IP address, or
+anything about what you do in the app. There are no ads, no analytics, no tracking, and nothing is ever sold or shared.</p>
+
+<h2>Cloudflare, who host it</h2>
+<p>The site runs on Cloudflare. Like any web host, Cloudflare sees your IP address to deliver the site and protect it
+(for example, to slow down an address that sends too many requests), and keeps basic request logs for a few days. See
+<a href="https://www.cloudflare.com/privacypolicy/">Cloudflare's privacy policy</a>.</p>
+
+<h2>Your choices</h2>
+<ul>
+  <li><b>See and take everything:</b> Settings › Data, sources &amp; keys › Download everything gives you your whole library as one file.</li>
+  <li><b>Delete everything:</b> Settings › Account &amp; sync › More › Delete my account removes your account and
+    every copy in the cloud at once. Your library on your devices stays.</li>
+  <li><b>Questions:</b> open an issue on <a href="https://univerlist.sayel.dev/issues">GitHub</a>.</li>
+</ul>
+<p class="muted">Under UK and EU data protection law, the account data is kept to provide the service you asked for,
+and the daily counts and sign-in list to keep it secure. You can also complain to the
+<a href="https://ico.org.uk/">ICO</a>.</p>
+
+<h2>Terms</h2>
+<ul>
+  <li>UniverList is free, made by one person, and provided as it is, with no guarantee it will always work or always
+    be here. Keep your own export of anything that matters to you.</li>
+  <li>If you lose every device and your recovery code, nobody can open your cloud copy, including the site. Your own exports still work.</li>
+  <li>New accounts may be paused when the site is full, and an account that abuses the service may be removed.</li>
+  <li>Use it lawfully. What you add, and what you play or read through it, is your responsibility.</li>
+  <li>UniverList is for people aged 13 and over.</li>
+  <li>As far as the law allows, the person who makes UniverList isn't liable for any loss that comes from using it,
+    including lost data. That's why exports exist.</li>
+  <li>Film and TV information comes from TMDB: this product uses the TMDB API but is not endorsed or certified by TMDB.
+    Game details come from <a href="https://rawg.io/">RAWG</a>. Anime and manga from AniList, books from Open Library,
+    music from MusicBrainz and the Cover Art Archive, TV schedules from TVmaze. UniverList isn't affiliated with any of
+    them; their names are used only to say where information comes from.</li>
+</ul>
+
+<h2 id="accessibility">Accessibility</h2>
+<p>UniverList aims to meet WCAG 2.2 AA. Everything can be used with a keyboard, with a visible focus outline; dialogs
+return focus to where you were; there's a reduced-motion setting, and your system's reduce-motion setting always wins;
+text scales with your browser's zoom. Every page and the main dialogs are checked automatically for accessibility
+problems on every change.</p>
+<p>Known gaps: reordering by drag has keyboard alternatives (Move up and Move down) but not on every list yet, some
+pictures from the catalogues have only their title as a description, and a few small, secondary details (counts and
+dates beside a title) are lighter than the 4.5:1 contrast the rest of the text meets. If something gets in your way, open an issue on
+<a href="https://univerlist.sayel.dev/issues">GitHub</a> and it will be fixed or explained.</p>
+<p><a href="./">← Back to UniverList</a></p>
+</main>
+</body>
+</html>

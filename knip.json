@@ -1,0 +1,18 @@
+{
+  "$schema": "https://unpkg.com/knip@5/schema.json",
+  "entry": [
+    "src/main.ts",
+    "worker/*.js",
+    "tools/*.{js,mjs}",
+    "tests/**/*.{cjs,mjs,js}",
+    "extensions/**/*.{js,mjs}"
+  ],
+  "project": [
+    "src/**/*.{ts,svelte,js}",
+    "worker/**/*.js",
+    "tools/**/*.{js,mjs}"
+  ],
+  "ignore": [
+    "src/features/*/*.js"
+  ]
+}

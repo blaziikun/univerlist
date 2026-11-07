@@ -1,0 +1,24 @@
+// src/styles/main.scss
+// ─────────────────────────────────────────────────────────────────
+//  Styles: the app's look, one layer after another
+//
+//  Each layer refines the ones above it, so the order below matters.
+//  Each partial moves next to its feature (as a Svelte component's <style lang="scss">) when that feature is rewritten.
+//  Theme values are CSS custom properties (--bg, --accent…), set while the app runs; Sass variables can't change after
+//  the build, so they're used only for fixed things like breakpoints.
+// ─────────────────────────────────────────────────────────────────
+
+@use "reset";
+@use "./layers/base";
+@use "./layers/media-colours";
+@use "./layers/themes";
+@use "./layers/banner";
+@use "./layers/tiles";
+@use "./layers/shell";
+@use "./layers/search-and-blocks";
+@use "./layers/servers-and-ranking";
+@use "./layers/cinema";
+@use "./layers/screens";
+@use "./layers/backdrops";
+@use "./layers/library-bar";
+@use "./layers/voice";

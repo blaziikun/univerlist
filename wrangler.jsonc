@@ -1,0 +1,39 @@
+// wrangler.jsonc
+// ─────────────────────────────────────────────────────────────────
+//  The Worker: the website's files, and /api
+// ─────────────────────────────────────────────────────────────────
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "univerlist-site",
+  "main": "worker/index.js",
+  "compatibility_date": "2026-06-01",
+  // only at univerlist.sayel.dev, behind the zone's WAF rules: no <name>.<account>.workers.dev address (which would
+  // also show your account's workers.dev name) and no preview addresses
+  "workers_dev": false,
+  "preview_urls": false,
+  "assets": {
+    "directory": "./dist",
+    "binding": "ASSETS",
+    "run_worker_first": ["/api/*"],   // /api runs the code; everything else is a file from dist/
+    "not_found_handling": "404-page"
+  },
+  // at most 60 /api requests a minute from one address (Workers rate limiting; free). namespace_id is any number you pick.
+  "ratelimits": [
+    { "name": "API_RL", "namespace_id": "4401", "simple": { "limit": 60, "period": 60 } },
+    { "name": "AUTH_RL", "namespace_id": "4402", "simple": { "limit": 10, "period": 60 } },  // sign-in and sign-up, per address
+    { "name": "SHARED_RL", "namespace_id": "4403", "simple": { "limit": 30, "period": 60 } }, // new lookups on the keys you lend, per address
+    { "name": "SHARED_ALL", "namespace_id": "4404", "simple": { "limit": 180, "period": 60 } } // and in total, per catalogue (IGDB allows 4 a second)
+  ],
+  // Account & sync: until these two exist, /api/sync says "isn't set up" and everything else works. Once:
+  //   npx wrangler d1 create univerlist-accounts            → put the database_id it prints below, then remove the //
+  //   npx wrangler r2 bucket create univerlist-libraries    (R2 needs a card on file, but the first 10 GB are free)
+  //   npx wrangler d1 migrations apply ACCOUNTS --remote
+  // The id isn't a secret: nothing can be done with it without your Cloudflare login.
+  // accounts, passkeys and sign-ins (nothing readable of anyone's library)
+  "d1_databases": [{ "binding": "ACCOUNTS", "database_name": "univerlist-accounts", "database_id": "72a3582d-2b74-4208-816d-646db21dbaf2", "migrations_dir": "worker/migrations" }],
+  // each account's library, encrypted on its own device before it's sent; the last three versions
+  "r2_buckets": [{ "binding": "LIBRARIES", "bucket_name": "univerlist-libraries" }],
+  "observability": { "enabled": true }   // errors and request counts in the Cloudflare dashboard (nothing personal is logged)
+  // your domain (its DNS must be on Cloudflare)
+  ,"routes": [{ "pattern": "univerlist.sayel.dev", "custom_domain": true }]
+}

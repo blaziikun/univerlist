@@ -1,0 +1,13 @@
+{
+  "id": "local-media-player",
+  "name": "Your own video files",
+  "version": "1.0.0",
+  "author": "you",
+  "description": "Plays shows and films from folders on your own computer, through a small companion program you run there. Finds the right file for each episode by its name.",
+  "main": "main.js",
+  "permissions": ["storage", "companion", "watch.sources"],
+  "companion": { "url": "http://127.0.0.1:7878", "health": "/health", "setup": "Start it with: node companion/server.mjs \"/path/to/your/videos\"" },
+  "settings": [
+    { "key": "token", "label": "Companion password (if you set one)", "type": "text", "secret": true, "default": "" }
+  ]
+}

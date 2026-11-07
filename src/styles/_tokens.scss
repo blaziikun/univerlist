@@ -1,0 +1,15 @@
+// src/styles/_tokens.scss
+// ─────────────────────────────────────────────────────────────────
+//  Tokens: fixed design values for new components
+//
+//  Colours, fonts and spacing that themes change live are CSS custom properties (see layers/_base.scss);
+//  these are the values that never change at runtime.
+// ─────────────────────────────────────────────────────────────────
+
+$phone: 600px;
+$tablet: 980px;
+$radius: 14px;
+$ease-out: cubic-bezier(.2, .8, .2, 1);
+
+@mixin phone { @media (max-width: $phone) { @content; } }
+@mixin panel { background: color-mix(in srgb, var(--bg) 88%, white 12%); border: 1px solid var(--line); border-radius: $radius; }

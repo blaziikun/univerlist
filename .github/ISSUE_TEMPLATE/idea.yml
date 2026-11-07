@@ -1,0 +1,12 @@
+# An idea for something new.
+name: An idea
+description: Something UniverList could do
+labels: [idea]
+body:
+  - type: textarea
+    id: idea
+    attributes:
+      label: The idea
+      description: What you'd like to do, and why. How you'd use it matters more than how it would be built.
+    validations:
+      required: true

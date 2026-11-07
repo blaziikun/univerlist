@@ -1,0 +1,6 @@
+# Security problems go to a private report, never a public issue.
+blank_issues_enabled: false
+contact_links:
+  - name: A security problem
+    url: https://univerlist.sayel.dev/report
+    about: Report it privately. Please don't open a public issue.

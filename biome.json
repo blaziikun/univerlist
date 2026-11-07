@@ -1,0 +1,61 @@
+{
+    "$schema": "./node_modules/@biomejs/biome/configuration_schema.json",
+    "files": {
+        "includes": [
+            "src/**/*.ts",
+            "src/**/*.js",
+            "worker/**/*.js",
+            "tools/**/*.js",
+            "tools/**/*.mjs",
+            "extensions/**/*.js",
+            "extensions/**/*.mjs",
+            "tests/unit/**/*.js",
+            "!**/node_modules",
+            "!dist",
+            "!dist-file"
+        ]
+    },
+    "formatter": {
+        "enabled": true,
+        "indentStyle": "space",
+        "indentWidth": 4,
+        "lineWidth": 120
+    },
+    "linter": {
+        "enabled": true,
+        "rules": {
+            "recommended": true,
+            "style": {
+                "noParameterAssign": "off",
+                "useTemplate": "off",
+                "noNonNullAssertion": "off"
+            },
+            "complexity": {
+                "useOptionalChain": "off",
+                "noForEach": "off"
+            },
+            "suspicious": {
+                "noAssignInExpressions": "off",
+                "noEmptyBlockStatements": "off"
+            }
+        }
+    },
+    "assist": {
+        "enabled": false
+    },
+    "javascript": {
+        "formatter": {
+            "quoteStyle": "double",
+            "trailingCommas": "es5",
+            "arrowParentheses": "asNeeded"
+        }
+    },
+    "overrides": [
+        {
+            "includes": ["src/features/*/*.js"],
+            "linter": {
+                "enabled": false
+            }
+        }
+    ]
+}

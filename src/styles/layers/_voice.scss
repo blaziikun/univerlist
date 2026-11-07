@@ -1,0 +1,45 @@
+// src/styles/layers/_voice.scss
+// ─────────────────────────────────────────────────────────────────
+//  The voice: how the app labels things (loaded last, so it has the final word)
+//
+//  UniverList is a catalogue of everything you read, watch and play. Its look borrows from a library, so the typefaces
+//  keep to the jobs they'd have there:
+//    - Newsreader (--f-head): headings, the way a catalogue drawer is titled
+//    - IBM Plex Sans (--f-ui): everything you read and press, labels included, in sentence case
+//    - IBM Plex Mono (--f-mono): only what a library would print: call numbers and spine marks, date stamps, keys
+//  Small labels stay out of tracked-out monospace capitals: those shout, make every section look the same, and read as
+//  a template. A label says what it is, quietly; a heading reads like a heading.
+// ─────────────────────────────────────────────────────────────────
+
+// panel and section headings
+.panel h3, .pwh, .sgroup2 > summary h3 {
+    font-family: var(--f-head); font-size: 17px; font-weight: 500; letter-spacing: -0.005em; text-transform: none;
+    color: var(--text); line-height: 1.25;
+}
+.panel h3 .hint, .pwh .hint { font-family: var(--f-ui); font-size: 12.5px; font-weight: 400; color: var(--muted); }
+
+// small labels: sentence case, in the UI face
+.label, .ilab, .field label, .lbsel .lbk, .gsortl, .tile .k, .ruled dt, .libt, .gsg, .palette .grp, .gssub, .sl,
+.sh-mode, .eyebrow, .welcome2 .eyebrow, .logo p, .cs-meta, .sc small, .pwmh span, .pwm i, .pwpill, .gsg span {
+    font-family: var(--f-ui); text-transform: none; letter-spacing: 0;
+}
+.label { font-size: 12.5px; font-weight: 600; color: var(--accent-ink); }
+.ilab, .field label, .tile .k, .ruled dt, .gsortl { font-size: 12px; font-weight: 500; color: var(--muted); }
+.lbsel .lbk { font-size: 12px; color: var(--muted); }
+.sl, .gsg, .palette .grp, .gssub { font-size: 12px; font-weight: 600; color: var(--muted); }
+.sh-mode, .libt { font-size: 12.5px; font-weight: 500; }
+.eyebrow, .welcome2 .eyebrow { font-size: 13px; font-weight: 500; }
+.logo p { font-size: 11.5px; }
+.pwmh span { font-size: 12px; font-weight: 600; color: var(--muted); }
+.pwm i, .pwpill { font-size: 11.5px; }
+
+// table headings
+table.lib th, .mdtable th { font-family: var(--f-ui); font-size: 12px; font-weight: 600; letter-spacing: 0; text-transform: none; color: var(--muted); }
+.unitable .uarea td { font: 600 12.5px var(--f-ui); text-transform: none; letter-spacing: 0; }
+
+// a stat's number and its words: the number in the heading face, the words underneath plain
+.tile .v, .ihero b, .lcreq b { font-family: var(--f-head); font-variant-numeric: lining-nums tabular-nums; }
+
+// keyboard focus you can always see, in every theme
+:where(button, a, input, select, textarea, summary, [tabindex]):focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; } }

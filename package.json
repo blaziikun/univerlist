@@ -1,0 +1,72 @@
+{
+  "name": "univerlist",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Track everything you watch, read and play. Local-first: your library lives in your browser and moves as an export.",
+  "type": "module",
+  "license": "AGPL-3.0-only",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build && node tools/pack-extensions.mjs extensions dist/extensions",
+    "build:file": "vite build --mode file",
+    "preview": "pnpm build && wrangler dev",
+    "deploy": "pnpm build && wrangler deploy",
+    "check": "svelte-check --tsconfig ./tsconfig.json",
+    "test": "pnpm lint && pnpm check && pnpm test:unit && pnpm test:e2e",
+    "test:unit": "vitest run",
+    "test:e2e": "pnpm build:file && node tools/pack-extensions.mjs extensions dist-file/extensions && node tests/e2e/run.mjs",
+    "test:stress": "pnpm build:file && node tests/stress/memory.cjs && node tests/stress/library-load.cjs && node tests/stress/reader-big.cjs",
+    "lint": "biome lint && knip",
+    "guard": "node tools/guard.mjs"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "packageManager": "pnpm@10.18.3",
+  "devDependencies": {
+    "@biomejs/biome": "2.2.4",
+    "@sveltejs/vite-plugin-svelte": "^7.3.1",
+    "axe-core": "4.14.0",
+    "esbuild": "^0.28.2",
+    "fflate": "^0.8.3",
+    "happy-dom": "^21.0.4",
+    "knip": "5.64.1",
+    "playwright": "1.56.0",
+    "sass-embedded": "^1.107.1",
+    "svelte": "^5.57.3",
+    "svelte-check": "^4.7.7",
+    "typescript": "^5.9.3",
+    "vite": "^8.3.5",
+    "vite-plugin-pwa": "^2.0.0",
+    "vite-plugin-singlefile": "^2.3.4",
+    "vitest": "^5.0.5",
+    "workbox-window": "^7.4.1",
+    "wrangler": "^4.156.0"
+  },
+  "dependencies": {
+    "@fontsource/chakra-petch": "5.3.0",
+    "@fontsource/dm-sans": "5.3.0",
+    "@fontsource/fraunces": "5.3.0",
+    "@fontsource/ibm-plex-mono": "^5.3.0",
+    "@fontsource/ibm-plex-sans": "5.3.0",
+    "@fontsource/inter": "^5.3.0",
+    "@fontsource/libre-baskerville": "5.3.0",
+    "@fontsource/lora": "5.3.0",
+    "@fontsource/newsreader": "5.3.0",
+    "@fontsource/overpass": "5.3.0",
+    "@fontsource/shippori-mincho": "5.3.0",
+    "@fontsource/sora": "5.3.0",
+    "@fontsource/space-grotesk": "^5.3.0",
+    "@fontsource/zen-kaku-gothic-new": "5.3.1",
+    "@simplewebauthn/browser": "14.0.0",
+    "@simplewebauthn/server": "14.0.3",
+    "hls.js": "1.7.3",
+    "uqr": "0.1.3"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "esbuild",
+      "workerd"
+    ]
+  }
+}
