@@ -18,7 +18,8 @@ README.md ─────────── what it is, running it, hosting it (
 ├── CONTRIBUTING.md   helping: bugs, ideas, pull requests, where the app is going
 ├── SECURITY.md       reporting a security problem privately
 ├── THIRD-PARTY.md    fonts, libraries and catalogues, with their licences
-└── LICENSE           GNU AGPL-3.0, with a permission for extensions and the credit line
+├── LICENSE           GNU AGPL-3.0 (the standard text)
+└── ADDITIONAL-TERMS.md  copyright, a permission for extensions and the credit line
 ```
 
 **Inside the app**, Settings › What's in here is the guide for people using it: every feature, where details come from,

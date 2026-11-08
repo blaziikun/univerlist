@@ -49,7 +49,7 @@ problem: [SECURITY.md](SECURITY.md).
 
 ## Licence
 
-GNU AGPL-3.0 ([LICENSE](LICENSE)): use it, change it, host it, as long as what you change stays open too. Extensions
+GNU AGPL-3.0 ([LICENSE](LICENSE), with the additional terms in [ADDITIONAL-TERMS.md](ADDITIONAL-TERMS.md)): use it, change it, host it, as long as what you change stays open too. Extensions
 can use any licence. A changed version keeps the line "Based on UniverList by sayel", linking to
 https://univerlist.sayel.dev/source, in its credits, and goes by a name of its own. Fonts and libraries keep their own
 licences: [THIRD-PARTY.md](THIRD-PARTY.md).

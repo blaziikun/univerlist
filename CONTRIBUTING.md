@@ -31,5 +31,5 @@ Personal tools that only some people want usually make better [extensions](docs/
 
 This is a spare-time project, so replies can take a week or two.
 
-By contributing you agree your work is released under the GNU AGPL-3.0 with the additional terms in [LICENSE](LICENSE),
+By contributing you agree your work is released under the GNU AGPL-3.0 with the additional terms in [ADDITIONAL-TERMS.md](ADDITIONAL-TERMS.md),
 like the rest of the project. Extensions you write and publish yourself can use any licence.
