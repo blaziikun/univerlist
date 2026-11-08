@@ -4,7 +4,7 @@
 // ─────────────────────────────────────────────────────────────────
 {
   "$schema": "node_modules/wrangler/config-schema.json",
-  "name": "univerlist-site",
+  "name": "univerlist",
   "main": "worker/index.js",
   "compatibility_date": "2026-06-01",
   // only at univerlist.sayel.dev, behind the zone's WAF rules: no <name>.<account>.workers.dev address (which would
