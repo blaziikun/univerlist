@@ -25,7 +25,7 @@
     "linter": {
         "enabled": true,
         "rules": {
-            "recommended": true,
+            "preset": "recommended",
             "style": {
                 "noParameterAssign": "off",
                 "useTemplate": "off",
@@ -50,5 +50,17 @@
             "trailingCommas": "es5",
             "arrowParentheses": "asNeeded"
         }
-    }
+    },
+    "overrides": [
+        {
+            "includes": ["tests/**/*.ts"],
+            "linter": {
+                "rules": {
+                    "performance": {
+                        "useDomNodeTextContent": "off"
+                    }
+                }
+            }
+        }
+    ]
 }

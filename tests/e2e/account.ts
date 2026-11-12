@@ -101,12 +101,16 @@ if (!fs.existsSync(path.join(ENV.SITE, "index.html"))) {
         })
     );
     // a change on B reaches A
+    // syncNow() joins a sync already running (an automatic one may have started before the change), so each device
+    // syncs again once that one has finished: the second is sure to see the change
     await B.ev(async () => {
         __ulTest.addItem({ medium: "film", title: "Perfect Days", status: "done" });
         await __ulTest.syncNow();
+        await __ulTest.syncNow();
     });
     await A.ev(async () => {
-        await __ulTest.syncNow();
+        for (let i = 0; i < 3 && ![...__ulTest.items.values()].some(x => x.title === "Perfect Days"); i++)
+            await __ulTest.syncNow();
     });
     ok(
         "a change on one device reaches the other",

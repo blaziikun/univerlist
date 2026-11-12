@@ -14,7 +14,7 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 40 # a normal run takes 10 to 15; anything stuck stops here instead of running for 6 hours
     steps:
-      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with: { fetch-depth: 0, persist-credentials: false } # the whole history, so the secret scan sees every commit
       # a key, token or password in any commit ever made stops everything here. The scanner is a fixed release, checked
       # against its published fingerprint before it runs
@@ -23,9 +23,9 @@ jobs:
           curl -sSfL -o gitleaks.tgz https://github.com/gitleaks/gitleaks/releases/download/v8.30.1/gitleaks_8.30.1_linux_x64.tar.gz
           echo "551f6fc83ea457d62a0d98237cbad105af8d557003051f41f3e7ca7b3f2470eb  gitleaks.tgz" | sha256sum --check
           tar xzf gitleaks.tgz gitleaks && ./gitleaks git --log-opts=--all --redact --no-banner . && rm gitleaks gitleaks.tgz
-      - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4
-      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5
-        with: { node-version: 26, cache: pnpm }
+      - uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6.1.1 (v6 is the first that installs pnpm 12)
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with: { node-version: 26, cache: pnpm } # 26 LTS. Playwright before 1.65 can't unzip its browser on 26 (the install hangs)
       - run: pnpm install --frozen-lockfile
       # my private words in any file, any version in the history, any zip, picture or commit stop everything too. Only on
       # a push to main: the step is the only one given the words, and a pull request's code (which could print them) never
@@ -59,11 +59,11 @@ jobs:
     timeout-minutes: 15
     concurrency: { group: deploy, cancel-in-progress: false } # one deploy at a time, in order
     steps:
-      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with: { persist-credentials: false }
-      - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4
-      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5
-        with: { node-version: 26, cache: pnpm }
+      - uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6.1.1 (v6 is the first that installs pnpm 12)
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with: { node-version: 26, cache: pnpm } # 26 LTS. Playwright before 1.65 can't unzip its browser on 26 (the install hangs)
       - run: pnpm install --frozen-lockfile
       - run: pnpm build                 # the site, without the test hook (the build checks it isn't there)
       - run: pnpm exec wrangler d1 migrations apply ACCOUNTS --remote   # new account tables, if any (none: does nothing)
