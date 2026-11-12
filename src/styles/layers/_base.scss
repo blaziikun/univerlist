@@ -181,7 +181,7 @@ main.main{min-width:0;padding:26px max(20px, env(safe-area-inset-right, 0px)) 80
 table.lib{width:100%;border-collapse:collapse;font-size:13px;min-width:760px}
 table.lib th{position:sticky;top:0;background:var(--panel2);text-align:left;font-family:var(--f-mono);font-weight:500;font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);padding:9px 10px;border-bottom:1px solid var(--line);white-space:nowrap}
 table.lib th button{background:none;border:0;padding:0;font:inherit;color:inherit;letter-spacing:inherit;text-transform:inherit}
-table.lib th button[aria-sort]{color:var(--accent-ink)}
+table.lib th[aria-sort] button{color:var(--accent-ink)}
 table.lib td{padding:calc(7px * var(--pad)) 10px;border-bottom:1px solid var(--line);vertical-align:middle}
 table.lib tr.tr{cursor:pointer}
 table.lib tr.tr:hover td{background:color-mix(in srgb,var(--text) 3%,transparent)}
@@ -350,15 +350,6 @@ textarea{min-height:84px;resize:vertical}
 .heat{display:grid;grid-template-rows:repeat(7,11px);grid-auto-flow:column;grid-auto-columns:11px;gap:3px}
 .heat i{border-radius:2px;background:var(--panel3)}
 
-/* palette */
-.palette{position:fixed;left:50%;top:12vh;transform:translateX(-50%);width:min(620px,calc(100% - 24px));background:var(--panel);border:1px solid var(--line2);border-radius:14px;box-shadow:var(--shadow);z-index:61;overflow:hidden}
-.palette input{width:100%;border:0;border-bottom:1px solid var(--line);background:transparent;padding:16px 18px;font-size:16px;outline:none}
-.palette .res{max-height:52vh;overflow-y:auto;padding:6px}
-.palette .it{display:flex;gap:12px;align-items:center;width:100%;background:transparent;border:0;border-radius:8px;padding:8px 10px;text-align:left;color:inherit}
-.palette .it[aria-selected="true"]{background:color-mix(in srgb,var(--accent) 16%,transparent)}
-.palette .it .ic{width:22px;text-align:center;color:var(--accent-ink);font-family:var(--f-mono)}
-.palette .it .sub{margin-left:auto;font-size:11.5px;color:var(--muted)}
-.palette .grp{font-family:var(--f-mono);font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--faint);padding:8px 10px 4px}
 .keys{display:grid;grid-template-columns:auto 1fr;gap:6px 14px;font-size:13px}
 .keys span:nth-child(odd){text-align:right}
 

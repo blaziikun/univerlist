@@ -2,12 +2,14 @@
     src/features/settings/sections/Keybinds.svelte
     ─────────────────────────────────────────────────────────────────
       Settings › Keybinds: change any shortcut, or turn one off. Pressing the new keys is caught by the app's own key
-      handling (core/keys.js), which watches for ui.keyCapture.
+      handling (core/keys.ts), which watches for ui.keyCapture.
     ─────────────────────────────────────────────────────────────────
 -->
 
 <script lang="ts">
     import { store } from "../../core/store.svelte";
+    import { allModes, toast } from "../../core/core";
+    import { KEY_ACTIONS, keyLabel, keysOf } from "../../core/keys";
 
     // getting around on the left, doing things on the right
     const NAV = ["search", "sidebar", "prevmode", "nextmode", "mode1", "mode2", "mode3", "mode4", "mode5", "mode6", "mode7", "mode8", "mode9", "overview", "library", "favourites", "stats", "lists", "watch", "settings", "private", "help"];

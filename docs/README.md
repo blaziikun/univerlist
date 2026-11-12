@@ -13,7 +13,7 @@ README.md ─────────── what it is, running it, hosting it (
 │   └── docs/extensions.md    writing an extension: the manifest, permissions, what it may offer
 │
 ├── docs/hosting.md   running your own copy: setting it up, every Cloudflare and GitHub setting, why it stays free
-│   └── docs/security.md   fifty common holes in web apps, each checked against UniverList
+│   └── docs/security.md   seventy common holes in web apps, each checked against UniverList
 │
 ├── CONTRIBUTING.md   helping: bugs, ideas, pull requests, where the app is going
 ├── SECURITY.md       reporting a security problem privately
@@ -23,7 +23,7 @@ README.md ─────────── what it is, running it, hosting it (
 ```
 
 **Inside the app**, Settings › What's in here is the guide for people using it: every feature, where details come from,
-and the keyboard shortcuts. It lives in `src/features/settings/guide.js`.
+and the keyboard shortcuts. It lives in `src/features/settings/guide.ts`.
 
 **Where to look for…**
 
@@ -36,5 +36,5 @@ and the keyboard shortcuts. It lives in `src/features/settings/guide.js`.
 | Know why it's built this way | [decisions.md](decisions.md) |
 | Know how a part works and where it breaks | [defence.md](defence.md) |
 | Read or write its backups | [data-format.md](data-format.md) |
-| Write an extension | [extensions.md](extensions.md), and the two official ones in `extensions/` |
+| Write an extension | [extensions.md](extensions.md), and the official one in `extensions/` (`local-media-player`) |
 | Check how it's protected | [security.md](security.md) |

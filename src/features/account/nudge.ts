@@ -6,6 +6,9 @@
 //  and never again once they've signed in or dismissed it.
 // ─────────────────────────────────────────────────────────────────
 
+import { changeListeners, items, toast } from "../core/core";
+import { goSettings } from "../core/navigation";
+
 const SAID = "ul-sync-nudged";
 
 export function nudgeToSync() {

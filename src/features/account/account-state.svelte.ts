@@ -37,6 +37,9 @@ import {
 } from "./passkey-unlock";
 import { newRecoveryCode, signInKey, tidyCode } from "./recovery-code";
 import { forget, saveState, startAuto, syncNow } from "./sync";
+import { APP_V, items, stopSaving } from "../core/core";
+import { render } from "../core/navigation";
+import { applyParts } from "../import-export/packs";
 
 type View = "loading" | "nosite" | "noserver" | "out" | "setup" | "locked" | "ready";
 export type History = {
@@ -52,6 +55,8 @@ export const acct = $state({
     note: "", // what just happened
     code: "", // a new recovery code, shown until you say you've saved it
     joining: false, // this page was opened from a QR code: offer to add this device
+    // whose account that code signs into (asked before it's used), and what this browser already has of its own
+    joinAs: null as { name: string; library: boolean; signedInAs: string } | null,
     qr: null as { url: string; svg: string; expires: number } | null, // the code this device is showing
     newPasskey: false, // signed in with the recovery code: offer a new passkey in place of the lost one
 });
@@ -356,19 +361,38 @@ export async function hideQr() {
 }
 
 // ── …and on the device that scanned it (or opened its link): signed in, no passkey made ──
-export const joinWithLink = () =>
-    act("Signing this device in…", async () => {
+// A code can come from anyone, and signing in with it merges this browser's library into that account's and saves it
+// there. So before anything is used, the page says whose account it is; and when this browser already has a library, or
+// is signed in to an account, nothing happens until you say that account is yours (JoinLink.svelte). Not saying so
+// (the default) leaves everything here as it was.
+/** whose account the code signs into, and what this browser already has: asked before the code is used (which it isn't) */
+export const checkLink = () =>
+    act("Checking the code…", async () => {
         if (!link) return;
+        const { name } = await api.linkPeek(link.token);
+        const here = await api.me().catch(() => null);
+        acct.joinAs = { name, library: items.size > 0, signedInAs: here ? here.name : "" };
+    });
+/** this browser has something of its own that signing in would hand to the code's account */
+export const joinNeedsChoice = (j = acct.joinAs) => !!j && (j.library || !!j.signedInAs);
+/** merge: you said the code's account is yours, so this browser's library may go into it */
+export const joinWithLink = (merge = false) =>
+    act("Signing this device in…", async () => {
+        if (!link || !acct.joinAs) return;
+        if (joinNeedsChoice() && !merge)
+            throw new Error(`Nothing was signed in: first say whether "${acct.joinAs.name}" is your own account.`);
         const { token, secret } = link;
         const r = await api.linkJoin(token);
         link = null;
         acct.joining = false;
+        acct.joinAs = null;
         await startFresh();
         await unlocked(await openLinkBox(r.linkBox as LinkBox, secret));
     });
 export function notJoining() {
     link = null;
     acct.joining = false;
+    acct.joinAs = null;
 }
 
 // ── your passkey: one, and only ever replaced ──
@@ -484,8 +508,8 @@ export const signOutAndClear = () =>
         location.reload();
     });
 async function clearThisBrowser() {
-    storage = "none"; // the app saves when a page closes (core.js flushSave): not any more
-    const known = ["stacks", "ul-account"]; // your library and settings (core.js), and the kept sync key (crypto.ts)
+    stopSaving(); // the app saves when a page closes (core.ts flushSave): not any more
+    const known = ["stacks", "ul-account"]; // your library and settings (core.ts), and the kept sync key (crypto.ts)
     const all = (await indexedDB.databases?.().catch(() => [])) || [];
     for (const name of new Set([...known, ...all.map(d => d.name || "").filter(Boolean)]))
         await new Promise(done => {

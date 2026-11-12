@@ -3,14 +3,18 @@
     ─────────────────────────────────────────────────────────────────
       Settings › Extensions: the built-in parts you can switch off, the official extensions you can add, dropping in
       your own, and the ones installed (on or off, their settings, private or not, their companion's health).
-      The switches, fields and buttons are handled where extensions live (extensions/extensions.js: data-exton,
-      data-extpriv, data-extset, ext-*; builtins.js: data-builtin), so this only draws it.
+      The switches, fields and buttons are handled where extensions live (extensions/extensions.ts: data-exton,
+      data-extpriv, data-extset, ext-*; builtins.ts: data-builtin), so this only draws it.
     ─────────────────────────────────────────────────────────────────
 -->
 
 <script lang="ts">
     import { onMount } from "svelte";
     import { store } from "../../core/store.svelte";
+    import { APP_NAME, textOf, ui } from "../../core/core";
+    import { renderMain } from "../../core/shell";
+    import { builtinOn, BUILTINS } from "../../extensions/builtins";
+    import { companionOf, EXT, EXT_OFFICIAL, EXT_PERMS, extGet, extPing } from "../../extensions/extensions";
 
     type Setting = { key: string; label: string; type?: string; default?: unknown; secret?: boolean };
     const first = (s: string) => String(s || "").split(/(?<=[.!?])\s/)[0];
@@ -18,7 +22,7 @@
     const v = $derived.by(() => {
         void store.meta;
         void store.ui;
-        const open = (ui.extOpen || {}) as Record<string, boolean>;
+        const open = ui.extOpen || {};
         return {
             builtins: BUILTINS.map(b => ({
                 ...b,
@@ -30,16 +34,16 @@
             official: EXT_OFFICIAL.map(([id, name, desc]) => ({ id, name, desc, added: !!extGet(id) })),
             list: EXT.list.map(x => {
                 const m = x.manifest,
-                    comp = m.companion,
-                    saved = (x.data?.settings || {}) as Record<string, unknown>;
+                    comp = companionOf(m),
+                    saved = x.data?.settings || {};
                 const settings: Setting[] = [...(comp ? [{ key: "companionUrl", label: "Companion address", type: "text", default: comp.url }] : []), ...(m.settings || [])];
                 return {
                     m,
                     on: !!x.on,
                     private: !!x.private,
                     open: !!open[m.id],
-                    first: first(m.description || ""),
-                    health: EXT.health[m.id] as string | undefined,
+                    first: first(textOf(m.description)),
+                    health: EXT.health[m.id],
                     comp,
                     settings: settings.map(s => ({ ...s, value: saved[s.key] ?? s.default ?? "" })),
                 };

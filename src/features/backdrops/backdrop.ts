@@ -2,7 +2,7 @@
 // ─────────────────────────────────────────────────────────────────
 //  Backdrops: what a backdrop you make is, and the check every backdrop goes through
 //
-//  A backdrop is the living layer behind the page. The built-in ones are CSS (look/ambience.js); the ones you make here
+//  A backdrop is the living layer behind the page. The built-in ones are CSS (look/ambience.ts); the ones you make here
 //  are plain data, drawn by engine.ts: a sky (two colours, or the theme's background), an optional picture that slowly
 //  drifts, and up to four layers of moving shapes (dots, stars, petals, rain…).
 //

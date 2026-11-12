@@ -30,7 +30,7 @@ A folder (or a `.zip` of it) with an `extension.json`, or a single `.json`/`.js`
 | `net` | Reach the web, through the app, at the `https` hosts it lists in `"hosts": [...]` and nowhere else |
 
 An extension's own code can reach only its companion. Its frame gets a security policy of its own before its code
-runs (`extPolicy` in `extensions/extensions.js`): `connect-src` is the companion's address, or nothing, and every other
+runs (`extPolicy` in `extensions/extensions.ts`): `connect-src` is the companion's address, or nothing, and every other
 kind of request is refused. The web (`net`) goes through the app, which checks the host first.
 
 **`"private": true`** keeps an extension out of plain backups: it only goes in sealed with your backup passphrase.
@@ -51,7 +51,7 @@ Browsers: Chrome asks once whether the site may reach devices on your network. I
 univerlist.provide("watch.sources", async ctx => [{ name, url, how }]);
 //   ctx: { title, seasonTitle, medium, year, ids, season, seasons, episode, film }
 univerlist.settings()              // this extension's settings, from Settings › Extensions
-univerlist.storage.get(key) / .set(key, value)
+univerlist.storage.get(key) / .set(key, value)   // any key but `settings` and `series`, which the app keeps
 univerlist.companion.get(path)     // GET <companion address><path>, as JSON
 univerlist.toast(text)
 univerlist.file(path)              // another file shipped inside the extension
@@ -76,7 +76,7 @@ Asked each time an episode or film opens, every extension on its own (a slow one
 
 Only the person's own sources are played: an address on their own device or network (localhost, private ranges,
 `.local`, Tailscale), a server they've added, or the extension's own companion. Anything else an extension offers is
-dropped (`src/features/watch-read/own-sources.js`), so an extension can't turn the player into a way to reach other
+dropped (`src/features/watch-read/own-sources.ts`), so an extension can't turn the player into a way to reach other
 people's videos.
 
 ```js

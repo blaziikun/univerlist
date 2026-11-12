@@ -3,10 +3,9 @@
     ─────────────────────────────────────────────────────────────────
       Settings › Modes: a mode is a lens over your library (what it shows, its shelves, theme and detailed ratings). Pick
       one, then change its name and look, what it shows and its shelves, the parts it rates, or copy or delete it. The
-      buttons and fields are handled by the classic code under the same names (settings/handlers.js: edit-mode, mode-*,
-      shelf-*; core/events.js: data-mm, data-modetheme, data-shelfname, data-critm, data-splitmode, hub-hide), so this only
-      draws it. The "what it shows" grids are still the classic HTML (matrixHTML in settings.js): reading them back depends
-      on it.
+      buttons and fields are handled by the older code under the same names (settings/handlers.ts: edit-mode, mode-*,
+      shelf-*; core/events.ts: data-mm, data-modetheme, data-shelfname, data-critm, data-splitmode, hub-hide), so this only
+      draws it. The "what it shows" grids (parts/Matrix.svelte) and the types (parts/KindTypes.svelte) save themselves.
     ─────────────────────────────────────────────────────────────────
 -->
 
@@ -14,6 +13,14 @@
     import { store } from "../../core/store.svelte";
     import Group from "../parts/Group.svelte";
     import Row from "../parts/Row.svelte";
+    import { DEFAULT_CRITERIA, isSpace, MEDIA, MEDIA_KEYS, meta, SHELF_AUTO, shelvesOf, ui } from "../../core/core";
+    import { resolveTheme } from "../../core/theme";
+    import KindTypes from "../parts/KindTypes.svelte";
+    import Matrix from "../parts/Matrix.svelte";
+    import { curGroup, curSort, curView, GROUPS, SORTS } from "../../core/views";
+    import { VIEW_LIST } from "../../library/library";
+    import { editingMode } from "../handlers";
+    import { describePats, kindToggles, themeOpts } from "../settings";
 
     type Shelf = { name: string; match?: string[] };
     const v = $derived.by(() => {
@@ -39,18 +46,17 @@
             group: curGroup(m),
             sort: curSort(m),
             shows: describePats(m.match as string[]),
-            matrix: matrixHTML((m.match as string[]) || [], "mode"),
             shelfMode: custom ? "custom" : String(m.shelves || "kind"),
-            shelfRows: custom ? shelves.map((s, i) => ({ s, i, shows: describePats(s.match), matrix: matrixHTML(s.match || [], "shelf" + i, modeMedia) })) : [],
+            shelfRows: custom ? shelves.map((s, i) => ({ s, i, shows: describePats(s.match) })) : [],
+            modeMedia,
             openShelf: ui.openShelf as number | undefined,
-            types: typesSettingsHTML(m),
             crit: (modeMedia.length ? modeMedia : MEDIA_KEYS).map(k => [k, MEDIA[k].name, (C[k] || DEFAULT_CRITERIA[k] || []).join(", ")] as const),
             confirmDel: !!ui.confirmModeDel,
         };
     });
 </script>
 
-{#snippet sel(id: string, opts: [string, string][], val: string, label: string)}
+{#snippet sel(id: string, opts: [string, string, ...string[]][], val: string, label: string)}
     <select class="sel" {id} aria-label={label}>
         {#each opts as [k, l] (k)}<option value={k} selected={String(val) === String(k)}>{l}</option>{/each}
     </select>
@@ -104,7 +110,7 @@
         {#if v.uni}
             <p class="hint">Everything except Games (and academic books while the Learning Centre is on).</p>
         {:else}
-            <details><summary class="hint">{v.shows}</summary>{@html v.matrix}</details>
+            <details><summary class="hint">{v.shows}</summary><Matrix match={v.m.match || []} prefix="mode" /></details>
         {/if}
         <Row label="Shelves">
             <div class="bar" style="margin-bottom:8px">
@@ -116,7 +122,7 @@
             </div>
             {#if v.custom}
                 <div class="shelfed">
-                    {#each v.shelfRows as { s, i, shows, matrix } (i)}
+                    {#each v.shelfRows as { s, i, shows } (i)}
                         <div class="shrow">
                             <div class="bar">
                                 <input class="inp" data-shelfname={i} value={s.name} style="max-width:220px" aria-label="Shelf name" />
@@ -126,7 +132,7 @@
                                 {#if i < v.shelfRows.length - 1}<button class="btn sm" data-act="shelf-merge" data-k={i}>Merge with next</button>{/if}
                                 <button class="btn sm ghost" data-act="shelf-del" data-k={i} aria-label="Delete shelf">✕</button>
                             </div>
-                            <details open={v.openShelf === i}><summary class="hint">Includes: {shows}</summary>{@html matrix}</details>
+                            <details open={v.openShelf === i}><summary class="hint">Includes: {shows}</summary><Matrix match={s.match || []} prefix="shelf{i}" media={v.modeMedia} /></details>
                         </div>
                     {/each}
                     <button class="btn sm" data-act="shelf-add">+ Shelf</button>
@@ -135,7 +141,7 @@
         </Row>
         {#if !v.uni && !v.space}
             <Row label="Types here" hint="What each type is called in this mode, and which ones count as one. The same names show everywhere the type does.">
-                <div class="ktypes">{@html v.types}</div>
+                <div class="ktypes"><KindTypes mode={v.m} /></div>
             </Row>
             {#if v.shelves.length > 1}
                 <Row label="Split into modes" hint={`Each ticked shelf becomes a mode of its own (with ${v.m.name}'s look) and leaves this one: Culture into Anime and Manga, say.`}>

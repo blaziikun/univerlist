@@ -31,16 +31,20 @@ jobs:
       # runs with them. What a pull request adds is checked when it's merged, before anything deploys
       - name: identity guard
         if: github.event_name == 'push'
-        run: node tools/guard.mjs
+        run: node tools/guard.ts
         env:
           PRIVATE_WORDS: ${{ secrets.PRIVATE_WORDS }}
       - run: pnpm audit --prod --audit-level=high   # what ships has no known serious vulnerability
       - run: pnpm exec playwright install --with-deps chromium
-      - run: pnpm lint                  # Biome (bugs, not style) and Knip (unused files and packages)
-      - run: pnpm check                 # types, Svelte components
+      - run: pnpm lint                  # Biome (bugs, and the layout every file keeps) and Knip (unused files and packages)
+      - run: pnpm check                 # types: the app, its Svelte components, the tests and tools, the Worker
       - run: pnpm test:unit             # the Worker, the proxy, the store
-      - run: pnpm build                 # the site (the security-header and account tests run against it)
-      - run: pnpm test:e2e              # browser tests; ones that need your own export skip here (it's never in the repo)
+      # what people get, each checked for the browser tests' hook (tools/no-test-hook.ts): it must not be in either
+      - run: pnpm build                 # the site
+      - run: pnpm build:file            # the one file people download
+      # browser tests, against the same two builds with the test hook put in (pnpm build:e2e, dist-e2e/ and
+      # dist-file-e2e/); ones that need your own export skip here (it's never in the repo)
+      - run: pnpm test:e2e
 
   deploy:
     needs: test
@@ -56,7 +60,7 @@ jobs:
       - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5
         with: { node-version: 26, cache: pnpm }
       - run: pnpm install --frozen-lockfile
-      - run: pnpm build
+      - run: pnpm build                 # the site, without the test hook (the build checks it isn't there)
       - run: pnpm exec wrangler d1 migrations apply ACCOUNTS --remote   # new account tables, if any (none: does nothing)
         if: ${{ vars.SYNC_ON == 'true' }}
         env:

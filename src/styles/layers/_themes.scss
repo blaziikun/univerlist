@@ -14,7 +14,7 @@ b,strong{font-weight:max(600, var(--w-ui))}
 .sh{font-size:calc(var(--fs-title) * .8);margin:0 0 6px;line-height:1.1}
 .ptitle{font-size:22px;line-height:1.15}
 /* shape follows the theme */
-.panel,.prof,.frcard,.lcard,.charcard,.pcard,.fav,.mstat,.preset,.modal,.palette,.tip,.toast,.banner{border-radius:var(--r)}
+.panel,.prof,.frcard,.lcard,.charcard,.pcard,.fav,.mstat,.preset,.modal,.tip,.toast,.banner{border-radius:var(--r)}
 .btn,.icon-btn,.search,.inp,.sel,.field input,.field select,textarea,.qi,.status-seg button,.seg,.cg,.cand,.castc,.keyrow{border-radius:var(--r-sm)}
 .seg button:first-child{border-radius:var(--r-sm) 0 0 var(--r-sm)}.seg button:last-child{border-radius:0 var(--r-sm) var(--r-sm) 0}
 .grid{grid-template-columns:repeat(auto-fill,minmax(var(--cover),1fr));gap:calc(var(--gap) + 6px) var(--gap)}

@@ -7,7 +7,7 @@
 //    query
 //    albumDetails    for one: how many tracks, how long, its genres, and the edition the numbers came from
 //  MusicBrainz asks for at most one request a second from each user, so every call here waits its turn (queue below).
-//  Results are in the shape every other source in the app gives (sources/sources.js): title, creator, year, kind,
+//  Results are in the shape every other source in the app gives (sources/sources.ts): title, creator, year, kind,
 //  cover, genres, ext ids, so adding, cards and search treat albums like anything else.
 // ─────────────────────────────────────────────────────────────────
 

@@ -11,8 +11,11 @@
 -->
 
 <script lang="ts">
+    import Icon from "../core/Icon.svelte";
     import { store } from "../core/store.svelte";
     import Account from "../account/Account.svelte";
+    // TMDB's mark, as its terms ask, in its own colour and smaller than ours; small enough to be part of the page itself
+    import tmdbLogo from "../../assets/tmdb-logo.svg";
     import Advanced from "./sections/Advanced.svelte";
     import Appearance from "./sections/Appearance.svelte";
     import Data from "./sections/Data.svelte";
@@ -24,8 +27,11 @@
     import Privacy from "./sections/Privacy.svelte";
     import Tags from "./sections/Tags.svelte";
     import Backdrops from "../backdrops/Backdrops.svelte";
+    import { norm, SOURCE_URL } from "../core/core";
+    import { SET_ALIAS, setSecs } from "./settings";
+    import DonateLink from "./parts/DonateLink.svelte";
 
-    // the section list and older names for sections ("go-settings io") are shared with the command palette (settings.js)
+    // the section list and older names for sections ("go-settings io") are kept in settings.ts
     const SECTIONS: Record<string, typeof General> = {
         general: General,
         library: Library,
@@ -90,7 +96,7 @@
 <div class="settings">
     <nav class="setnav" aria-label="Settings sections">
         <div class="setq">
-            {@html ICON.search}
+            <Icon name="search" />
             <input id="set-q" placeholder="Search settings" value={q} autocomplete="off" aria-label="Search settings" oninput={e => store.go({ setQ: e.currentTarget.value })} />
         </div>
         <div class="setsecs">
@@ -99,7 +105,11 @@
             {/each}
         </div>
         <button class="linkbtn setdocs" data-act="go-features">What's in here</button>
-        <a class="linkbtn setdocs" href={SOURCE_URL} target="_blank" rel="noopener">Source code</a>{@html donateLinkHTML("setdon")}
+        <a class="linkbtn setdocs" href={SOURCE_URL} target="_blank" rel="noopener">Source code</a><DonateLink cls="setdon" />
+        <p class="setcredit">
+            <a href="https://www.themoviedb.org" target="_blank" rel="noopener"><img src={tmdbLogo} alt="TMDB" width="18" height="18" /></a>
+            <span>This product uses the TMDB API but is not endorsed or certified by TMDB.</span>
+        </p>
     </nav>
     <div class="setbody" bind:this={body}>
         {#each showing as k (k)}

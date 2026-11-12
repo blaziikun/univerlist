@@ -3,8 +3,9 @@
     ─────────────────────────────────────────────────────────────────
       Settings › Appearance: themes, and everything about the look (colours, type, shape, the backdrop behind the page, the
       header and sidebar, Watch & read). You edit one theme at a time; any mode can use it.
-      What each control does is in the classic handlers, found by the same names (settings/handlers.js: theme-*, set-amb,
-      set-logo, side-pos, layout-reset; core/events.js: data-theme, data-themehex, data-stagetheme), so this only draws it.
+      What each control does is in the older handlers, found by the same names (settings/handlers.ts: theme-*, set-amb,
+      set-logo, side-pos, layout-reset; core/events.ts: data-theme, data-themehex); Watch & read's look is its own
+      (stageThemeSet in watch-read/stage.ts).
     ─────────────────────────────────────────────────────────────────
 -->
 
@@ -12,6 +13,14 @@
     import { store } from "../../core/store.svelte";
     import Group from "../parts/Group.svelte";
     import Row from "../parts/Row.svelte";
+    import { meta, ui } from "../../core/core";
+    import { themeFmt } from "../../core/events";
+    import { keyFor, keyLabel } from "../../core/keys";
+    import { SIDE_TEXT } from "../../core/shell";
+    import { BACKDROPS, BG_STYLES, FONTS, fontStack, myBackdropChoices, resolveTheme, THEME_PRESETS, themesUsing } from "../../core/theme";
+    import { editingMode } from "../handlers";
+    import { editThemeId, themeList } from "../settings";
+    import { STAGE_LOOKS, stageLook, stageThemeSet } from "../../watch-read/stage";
 
     type Theme = Record<string, string | number> & { name?: string };
     const CASES: [string, string][] = [
@@ -89,7 +98,7 @@
 {#snippet range([k, l, a, b, st]: Range)}
     <label class="ctl rangec"><span>{l}</span>
         <input type="range" data-theme={k} min={a} max={b} step={st} value={v.T[k]} />
-        <!-- the number beside it is also written as you drag (events.js); drawn afresh when the theme changes -->
+        <!-- the number beside it is also written as you drag (events.ts); drawn afresh when the theme changes -->
         {#key v.T[k]}<output>{themeFmt(k, v.T[k])}</output>{/key}
     </label>
 {/snippet}
@@ -206,7 +215,7 @@
 
 <Group title="Watch & read" open={false}>
     <Row label="Look" hint="The player and the reader: black by default, or a theme of yours.">
-        <select class="sel" data-stagetheme="1" aria-label="Look">
+        <select class="sel" data-stagetheme="1" aria-label="Look" onchange={e => stageThemeSet(e.currentTarget.value)}>
             {#each v.stage as [k, l], i (i)}<option value={k} selected={String(v.stageNow) === String(k)}>{l}</option>{/each}
         </select>
     </Row>

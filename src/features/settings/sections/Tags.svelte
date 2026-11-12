@@ -7,6 +7,9 @@
 
 <script lang="ts">
     import { store } from "../../core/store.svelte";
+    import { change, clone, items, markDirty, meta, toast, ui, undo } from "../../core/core";
+    import { render } from "../../core/navigation";
+    import { renderSide } from "../../core/shell";
 
     let confirmAll = $state(false);
     const tags = $derived(Object.entries(store.meta.tags).sort((a, b) => a[0].localeCompare(b[0])));

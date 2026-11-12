@@ -3,16 +3,17 @@
     "files": {
         "includes": [
             "src/**/*.ts",
-            "src/**/*.js",
-            "worker/**/*.js",
-            "tools/**/*.js",
-            "tools/**/*.mjs",
+            "worker/**/*.ts",
+            "tools/**/*.ts",
+            "tests/**/*.ts",
             "extensions/**/*.js",
             "extensions/**/*.mjs",
-            "tests/unit/**/*.js",
             "!**/node_modules",
             "!dist",
-            "!dist-file"
+            "!dist-file",
+            "!dist-e2e",
+            "!dist-file-e2e",
+            "!**/.wrangler"
         ]
     },
     "formatter": {
@@ -49,13 +50,5 @@
             "trailingCommas": "es5",
             "arrowParentheses": "asNeeded"
         }
-    },
-    "overrides": [
-        {
-            "includes": ["src/features/*/*.js"],
-            "linter": {
-                "enabled": false
-            }
-        }
-    ]
+    }
 }

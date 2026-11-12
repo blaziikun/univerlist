@@ -46,7 +46,7 @@ export const qrSvg = (text: string) => renderSVG(text, { ecc: "M", border: 2, bl
 export function linkFromUrl(): { token: string; secret: Uint8Array } | null {
     const m = /^#link=([A-Za-z0-9_-]{20,})\.([A-Za-z0-9_-]{40,})$/.exec(location.hash);
     if (!m) return null;
-    // window.history, not history: the classic scripts have a global of that name (the undo list)
+    // window.history, not history: core/core.ts has a history of its own (the undo list)
     window.history.replaceState(null, "", location.pathname + location.search);
     try {
         return { token: m[1], secret: unb64url(m[2]) };

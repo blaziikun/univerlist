@@ -1,11 +1,17 @@
 // ============ build ============
 //   pnpm build        → dist/        the website: hashed files, works offline after the first visit, installable
 //   pnpm build:file   → dist-file/   one index.html that works opened straight from disk, no internet needed
+//   pnpm build:e2e    → dist-e2e/ and dist-file-e2e/: the same two, plus the test hook the browser tests drive the
+//                       page through (core/test-hook.ts). Nothing else differs: the hook is in only where
+//                       __UL_TEST_HOOK__ is true, and every other build is checked for it (tools/no-test-hook.ts)
+import { execFileSync } from "node:child_process";
+import { readFileSync } from "node:fs";
+import { fileURLToPath } from "node:url";
+import ts from "typescript";
 import { defineConfig, type Plugin } from "vite";
 import { svelte } from "@sveltejs/vite-plugin-svelte";
 import { VitePWA } from "vite-plugin-pwa";
 import { viteSingleFile } from "vite-plugin-singlefile";
-import classicScripts from "./tools/classic-scripts.js";
 
 // the one-file build has no service worker: the offline-install code becomes a no-op
 const noServiceWorker = (): Plugin => ({
@@ -14,17 +20,43 @@ const noServiceWorker = (): Plugin => ({
   load: id => (id === "\0pwa-off" ? "export const registerSW = () => async () => {};" : null)
 });
 
+// Settings › Data offers the stand-alone catalogue proxy to copy into a Worker of your own: worker/proxy.ts, given to the
+// app (import "virtual:proxy-script") as plain JavaScript. The types come out and the comments stay, then Biome lays it
+// out as the rest of the code is, so it reads like a file written by hand. Blank lines are kept through a marker, since
+// TypeScript's output drops them.
+const PROXY_SOURCE = fileURLToPath(new URL("worker/proxy.ts", import.meta.url));
+const BLANK = "/*\u2063*/";
+function proxyScript(source: string): string {
+  const marked = source.replace(/^[ \t]*$/gm, BLANK);
+  const js = ts.transpileModule(marked, {
+    compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.ESNext, verbatimModuleSyntax: true }
+  }).outputText.replace(/^[ \t]*\/\*\u2063\*\/[ \t]*$/gm, "");
+  const biome = fileURLToPath(new URL("node_modules/.bin/biome", import.meta.url));
+  return execFileSync(biome, ["format", "--stdin-file-path=src/proxy-script.js"], { input: js, encoding: "utf8" });
+}
+const proxyScriptModule = (): Plugin => ({
+  name: "proxy-script",
+  resolveId: id => (id === "virtual:proxy-script" ? "\0proxy-script" : null),
+  load(id) {
+    if (id !== "\0proxy-script") return null;
+    this.addWatchFile(PROXY_SOURCE);
+    return `export default ${JSON.stringify(proxyScript(readFileSync(PROXY_SOURCE, "utf8")))};`;
+  }
+});
+
 export default defineConfig(({ mode }) => {
-  const file = mode === "file";
+  const e2e = mode === "e2e" || mode === "file-e2e";
+  const file = mode === "file" || mode === "file-e2e";
   return {
     base: "./",
+    define: { __UL_TEST_HOOK__: JSON.stringify(e2e) },
     publicDir: file ? false : "public",
     // tests use Svelte's browser runtime, so runes and effects run in them as they do in the app (Svelte's testing guide)
     resolve: process.env.VITEST ? { conditions: ["browser"] } : undefined,
-    build: { outDir: file ? "dist-file" : "dist", emptyOutDir: true, target: "es2022", chunkSizeWarningLimit: 4000 },
+    build: { outDir: (file ? "dist-file" : "dist") + (e2e ? "-e2e" : ""), emptyOutDir: true, target: "es2022", chunkSizeWarningLimit: 4000 },
     plugins: [
-      classicScripts({ inline: file }),
       svelte(),
+      proxyScriptModule(),
       file ? [viteSingleFile(), noServiceWorker()] : VitePWA({
         registerType: "prompt",
         injectRegister: false,

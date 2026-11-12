@@ -8,13 +8,13 @@
 ## Setting it up
 
 1. **A Cloudflare account** (free). Add your domain and switch its nameservers to Cloudflare's.
-2. In `wrangler.jsonc`, uncomment `routes` and put your domain in.
+2. In `wrangler.jsonc`, `routes` names this site's domain: put yours in its place.
    In `public/_redirects`, point `/source`, `/issues`, `/report` and `/sponsor` at your own repository: the app and its
    pages link only to those, so moving the code later means changing that one file. If you've changed the code, also
-   point `SOURCE_URL` and `DONATE_URL` (top of `src/features/core/core.js`) at your own site: the licence asks that
+   point `SOURCE_URL` and `DONATE_URL` (top of `src/features/core/core.ts`) at your own site: the licence asks that
    people using your copy can get *your* source from it.
 3. `npx wrangler login`, then add the keys you use as secrets (`npx wrangler secret put TMDB_KEY` and so on; the full
-   list is at the top of `worker/proxy.js`). **TMDB_KEY and CLIENT_ID + CLIENT_SECRET (IGDB) are lent to everyone using
+   list is at the top of `worker/proxy.ts`). **TMDB_KEY and CLIENT_ID + CLIENT_SECRET (IGDB) are lent to everyone using
    your site**, so visitors need no keys of their own; the rest (SteamGridDB, Comic Vine…) are yours alone, and on the
    site they answer only with `PASS`, so set it if you add any of them. It never gets in the way of the site's own
    pages. For
@@ -49,9 +49,24 @@
 | D1 (accounts) | 5 million reads, 100,000 writes a day, 5 GB | Refused until midnight UTC. Never billed |
 | **R2 (the synced libraries)** | 10 GB, 1 million writes, 10 million reads a month | **Billed**: it's the only part with a card on file |
 
-So R2 is the one to guard, and the Worker does: at most 100 accounts (`MAX_USERS`), each at most 4 versions of 20 MB
-(the last 3, and one from over a day ago), 300 saves and 1,000 reads a day. Even if every account were abused to the limit, that's 8 GB, 0.9 million writes and
-3 million reads a month: inside the free tier. Raise `MAX_USERS` only with that sum in mind.
+So R2 is the one to guard, and the Worker does, in two ways:
+
+- **The month's budget** (`BUDGET` in `worker/sync.ts`): the whole site's R2 writes, reads and stored bytes are counted
+  in D1, and stop at 90% of the free amounts (900,000 writes, 9 million reads, 9 GB). Past it, syncing waits for the 1st;
+  every library stays whole on its devices. This holds however many accounts there are.
+- **Each account's share:** at most 4 versions of 20 MB (the last 3, and one from over a day ago), 300 saves and 1,000
+  reads a day, so one account can't use up everyone's month.
+
+`MAX_USERS` (1,000) only keeps the number sensible. A library is usually well under 1 MB, so 1,000 accounts keep about
+4 GB with their versions, and save far less than the budget allows.
+
+**The Worker's 100,000 requests a day are for the whole Cloudflare account, not this site.** A busy day here (many
+people searching films and games, or big imports) can stop other Workers on the same account (a contact form, say)
+until midnight UTC. Their static pages carry on. Put a site whose Worker matters on its own free account, or move to
+the Workers paid plan ($5 a month, 10 million requests) if this one outgrows the free one.
+
+**Apply new migrations before deploying a Worker that needs them** (`npx wrangler d1 migrations apply ACCOUNTS
+--remote`, then `npx wrangler deploy`). CI does it in that order.
 
 Cloudflare has no hard spending cap, only alerts: **Manage account › Billing › Billable usage › budget alert**, set to
 $1, so you'd hear about anything at all.
@@ -107,7 +122,7 @@ Never use *Challenge* on `/api`: the app calls it with `fetch()`, which can't so
   account tables by themselves.
 - **Settings › Secrets and variables › Actions › Secrets**: `PRIVATE_WORDS`, a repository secret: one word or phrase
   per line that would lead back to you (your name and its parts, personal email addresses). The identity guard
-  (`tools/guard.mjs`) fails every push that has one in a file, a picture's metadata or a commit's author, and never
+  (`tools/guard.ts`) fails every push that has one in a file, a picture's metadata or a commit's author, and never
   prints the words. On your own machine it reads `~/.config/sayel/private-words` instead (`pnpm guard`).
 - **Settings › Actions › General › Allowed actions**: GitHub's own plus `pnpm/action-setup`, the only other action
   `ci.yml` uses (the secret scanner is a fixed release checked against its fingerprint, not an action).

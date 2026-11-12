@@ -1,12 +1,13 @@
 // src/main.ts
 // ─────────────────────────────────────────────────────────────────
-//  Main: what starts once the classic scripts are running
+//  Main: where the app starts
 //
-//  The app's classic scripts (the .js files in src/features, joined in order.json's order) start first. This module
-//  adds what sits around them: bundled fonts (so it looks right offline), offline install and updates, and asks the
-//  browser to keep the data.
+//  The app's own modules start first, in their fixed order (features/core/start.ts). This module adds what sits around
+//  them: bundled fonts (so it looks right offline), offline install and updates, the pages and dialogs Svelte draws,
+//  and asks the browser to keep the data.
 // ─────────────────────────────────────────────────────────────────
 
+import "./features/core/start";
 import { addBundledFonts } from "./features/look/fonts";
 import "./features/core/install.svelte";
 import { mount } from "svelte";
@@ -15,10 +16,26 @@ import { myBackdrops } from "./features/backdrops/backdrop";
 import { startBackdrops } from "./features/backdrops/backdrop-layer";
 import { registerSW } from "virtual:pwa-register";
 import UpdateToast from "./features/update/UpdateToast.svelte";
-import { startAuto, state as syncState, syncNow } from "./features/account/sync";
+import { startAuto, state as syncState } from "./features/account/sync";
 import { takeLink } from "./features/account/account-state.svelte";
 import { nudgeToSync } from "./features/account/nudge";
-import { albumDetails, searchAlbums } from "./features/music/musicbrainz";
+import { DONATE_URL, markDirty, meta, safeUrl, ui } from "./features/core/core";
+import { renderMain, useSveltePages, useSvelteShell } from "./features/core/shell";
+import TopBar from "./features/core/shell/TopBar.svelte";
+import Side from "./features/core/shell/Side.svelte";
+import Search from "./features/core/shell/Search.svelte";
+import SpineTip from "./features/library/tiles/SpineTip.svelte";
+import DonateLink from "./features/settings/parts/DonateLink.svelte";
+import { closeModal, renderOverlay, useSvelteDialogs } from "./features/core/modals";
+import { dropDialog, drawDialog, hasDialog, isDrawn } from "./features/core/dialogs";
+import { drawMenu, dropMenu, menuCatchUp, menuShown } from "./features/core/menus";
+import { useSvelteMenus } from "./features/core/keys";
+import { goSettings } from "./features/core/navigation";
+import { isBooted, joinOnStart } from "./features/core/events";
+import { builtinOn } from "./features/extensions/builtins";
+import { useSveltePlayer } from "./features/watch-read/watch";
+import { useSvelteReader } from "./features/watch-read/read";
+import { playerSurface, readerSurface } from "./features/watch-read/surfaces";
 
 addBundledFonts();
 
@@ -32,7 +49,6 @@ if (import.meta.env.PROD && location.protocol.startsWith("http"))
 
 // Backdrops you made (Settings › Backdrops): drawn behind the page when a theme uses one. Nothing runs otherwise. What's kept
 // is checked once here, and again whenever backdrops arrive from a backup or another device (applyParts).
-window.ulBackdrops = { clean: myBackdrops };
 if (Array.isArray(meta.settings.backdrops)) {
     const clean = myBackdrops(meta.settings.backdrops);
     if (JSON.stringify(clean) !== JSON.stringify(meta.settings.backdrops)) {
@@ -41,27 +57,46 @@ if (Array.isArray(meta.settings.backdrops)) {
     }
 }
 startBackdrops();
-// The pages Svelte draws (Settings, the guide: core/pages.ts): the page code asks for one when you open it, and lets it
-// go when you leave. If the app opened on one before this ran, it's drawn now.
-window.ulPages = { show: showPage, hide: hidePage };
-if (typeof ui !== "undefined" && hasPage(ui.page)) renderMain();
-window.ulSync = { now: () => syncNow().then(() => {}) };
-// Music: the classic scripts' search and details reach MusicBrainz through this (sources.js, search.js)
-window.ulMusic = { searchAlbums, albumDetails };
-// Adaptive streams (.m3u8, from Jellyfin or Plex) outside Safari: hls.js, a part of this site's own files, loaded the
-// first time one plays (watch.js, attachHLS). It's never fetched from anywhere else, so the site's script rule holds
-window.ulHls = () => import("hls.js").then(m => m.default);
+// The shell (the top bar, the sidebar, the search box: core/shell/): each is mounted where it goes the first time the
+// page code draws it, and draws again when asked
+useSvelteShell({
+    top: target => mount(TopBar, { target }),
+    side: target => mount(Side, { target }),
+    search: target => {
+        target.dataset.svelte = "";
+        mount(Search, { target });
+    },
+});
+// …and the card that shows over a spine you point at
+mount(SpineTip, { target: document.body });
+// …and the small support link in the corner of every page
+if (safeUrl(DONATE_URL)) {
+    const foot = document.createElement("div");
+    foot.id = "donatefoot";
+    document.body.append(foot);
+    mount(DonateLink, { target: foot, props: { cls: "donatefoot" } });
+}
+// The pages Svelte draws (a mode's page with its tabs, Settings, the guide: core/pages.ts): the page code asks for one
+// when you open it, and lets it go when you leave. If the app opened on one before this ran, it's drawn now.
+useSveltePages({ show: showPage, hide: hidePage });
+if (hasPage(ui.page)) renderMain();
+// …and the dialogs it draws (the item card: core/dialogs.ts), the same way
+useSvelteDialogs({ has: hasDialog, isDrawn, draw: drawDialog, drop: dropDialog });
+if (ui.modal && hasDialog(ui.modal.kind)) renderOverlay();
+// …and the right-click menus (core/menus.ts)
+useSvelteMenus({ draw: drawMenu, catchUp: menuCatchUp, shown: menuShown, drop: dropMenu });
+useSveltePlayer(playerSurface);
+useSvelteReader(readerSurface);
 
 // Opened by scanning an "Sign in on another device" code: Account & sync offers to sign this device in. The app's own start-up does the
-// rest when it finishes (events.js, ulJoining); if it already has, it happens here.
+// rest when it finishes (events.ts, joinOnStart); if it already has, it happens here.
 if (takeLink()) {
-    window.ulJoining = true;
-    if (window.ulBooted) {
+    joinOnStart();
+    if (isBooted()) {
         if (ui.modal) closeModal();
         goSettings("account");
     }
 }
 // not signed in yet, on the website, with a few things added: once, suggest putting the library on their phone too
 if (location.protocol.startsWith("http") && !syncState().on) nudgeToSync();
-if (location.protocol.startsWith("http") && syncState().on && typeof builtinOn === "function" && builtinOn("account"))
-    startAuto();
+if (location.protocol.startsWith("http") && syncState().on && builtinOn("account")) startAuto();

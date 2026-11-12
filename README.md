@@ -15,7 +15,7 @@ syncs your library end-to-end encrypted.
 
 ## Run it
 
-Needs Node 22 or later and pnpm.
+Needs Node 22.18 or later (it runs the TypeScript tools and tests as they are) and pnpm.
 
 ```
 pnpm install
@@ -27,8 +27,9 @@ pnpm dev                                  # http://localhost:5173, reloads as yo
 | --- | --- |
 | `pnpm build` | The website, in `dist/` |
 | `pnpm build:file` | The whole app as one file, `dist-file/index.html`, that opens from disk |
+| `pnpm build:e2e` | The same two with the browser tests' hook in (`dist-e2e/`, `dist-file-e2e/`): only for the tests, never deployed |
 | `pnpm preview` | The site and its `/api` locally, as Cloudflare runs them (http://127.0.0.1:8787) |
-| `pnpm test` | Lint, types, unit tests and browser tests |
+| `pnpm test` | Lint (with the formatting), types, unit tests and browser tests |
 | `pnpm test:stress` | Memory and speed with a big library |
 
 Some browser tests need a real library: point them at one of your own exports, which is never copied into the repo:
@@ -37,12 +38,13 @@ Some browser tests need a real library: point them at one of your own exports, w
 ## Host your own copy
 
 It runs on Cloudflare's free plan: the site's files plus one Worker. In short, add your domain in `wrangler.jsonc`,
-`npx wrangler login`, add the catalogue keys you use as Worker secrets (the list is at the top of `worker/proxy.js`),
+`npx wrangler login`, add the catalogue keys you use as Worker secrets (the list is at the top of `worker/proxy.ts`),
 and `pnpm deploy`. Account & sync needs a D1 database and an R2 bucket as well. Every step, every dashboard setting and
 the limits that keep it free are in [docs/hosting.md](docs/hosting.md).
 
 ## How it's built
 
+Strict TypeScript and Svelte 5, built with Vite; the server is one Cloudflare Worker, also TypeScript.
 [docs/README.md](docs/README.md) is the map: how the code fits together, why each tool was chosen, the export format,
 extensions, hosting and security, each in its own page. Helping: [CONTRIBUTING.md](CONTRIBUTING.md). Reporting a security
 problem: [SECURITY.md](SECURITY.md).

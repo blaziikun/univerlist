@@ -3,7 +3,7 @@
 //  The fonts the built-in themes use, bundled with the app: they work offline, and no visitor's browser asks Google
 //  for them. Each weight is registered here and downloaded only when the page first uses it (woff2 only: every browser
 //  the app supports reads it). A font you pick yourself from the longer list in Appearance is fetched from Google Fonts
-//  instead; loadFont in core/theme.js skips these, and BUNDLED_FONTS there names the same families.
+//  instead; loadFont in core/theme.ts skips these, and BUNDLED_FONTS there names the same families.
 // ─────────────────────────────────────────────────────────────────
 
 import inter300 from "@fontsource/inter/files/inter-latin-300-normal.woff2?url";

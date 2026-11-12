@@ -1,8 +1,10 @@
 # Security headers for every file the site serves (Cloudflare reads this file; the Worker adds the same to /api).
 # The app's own scripts are files ('self'); nothing inline runs. Pictures and media come from many catalogues and from
-# your own servers (Jellyfin, Plex… often plain http on your network), so those stay open; scripts never do.
+# your own servers (Jellyfin, Plex… often plain http on your network), so those stay open; scripts never do. Frames:
+# the site's own pages (an extension's ext-host.html), a book or PDF you opened (blob:), and the player's YouTube embed,
+# nothing else (tests/e2e/csp.ts checks every embed the app has is allowed).
 /*
-  Content-Security-Policy: default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' https: http: data: blob:; media-src 'self' https: http: data: blob:; font-src 'self' data: https://fonts.gstatic.com; connect-src 'self' https: http: wss:; worker-src 'self' blob:; frame-src 'self' blob:; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; manifest-src 'self'
+  Content-Security-Policy: default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' https: http: data: blob:; media-src 'self' https: http: data: blob:; font-src 'self' data: https://fonts.gstatic.com; connect-src 'self' https: http: wss:; worker-src 'self' blob:; frame-src 'self' blob: https://www.youtube-nocookie.com; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; manifest-src 'self'
   Strict-Transport-Security: max-age=31536000; includeSubDomains
   X-Content-Type-Options: nosniff
   X-Frame-Options: DENY
@@ -16,7 +18,7 @@
 /ext-host.html
   ! Content-Security-Policy
   ! X-Frame-Options
-  Content-Security-Policy: default-src 'none'; script-src 'unsafe-inline'; connect-src https: http: wss:; img-src https: data:; frame-ancestors 'self'
+  Content-Security-Policy: default-src 'none'; script-src 'unsafe-inline'; connect-src https: http: wss:; img-src https: data:; frame-ancestors 'self'; sandbox allow-scripts
 
 # built files carry a hash of their contents in the name, so a browser can keep them for good
 /assets/*

@@ -12,6 +12,11 @@
     import Group from "../parts/Group.svelte";
     import Row from "../parts/Row.svelte";
     import Seg from "../parts/Seg.svelte";
+    import { allModes, changeMeta, clone, coverCache, modeById, plural, SCALES, snapshot, toast } from "../../core/core";
+    import { render } from "../../core/navigation";
+    import { modeProfile } from "../../core/shell";
+    import Avatar from "../../core/shell/Avatar.svelte";
+    import { modeChanged } from "../handlers";
 
     const DATE_FMTS: [string, string][] = [
         ["dmy", "1 Nov 2026"],
@@ -34,7 +39,7 @@
     });
     const apple = /Mac|iPhone|iPad/.test(navigator.platform) && !/Chrome|Edg/.test(navigator.userAgent);
 
-    // copies, so a change shows: the classic code changes these objects in place (see store.svelte.ts)
+    // copies, so a change shows: the older code changes these objects in place (see store.svelte.ts)
     const s = $derived({ ...store.meta.settings });
     const p = $derived({ ...store.meta.profile });
     // the Hub's profile is yours; modes with their own name, picture or bio are listed so you can give them yours
@@ -54,7 +59,7 @@
     /** a setting changed: saved, and everything redrawn (titles, dates and scores show all over the app) */
     const set = (key: string, value: unknown) => store.updateMeta(m => (m.settings[key] = value));
     const profile = (key: "name" | "bio", label: string, value: string) =>
-        changeMeta(label, "profile", (pr: Record<string, unknown>) => ({ ...pr, [key]: value.trim() }));
+        changeMeta(label, "profile", pr => ({ ...pr, [key]: value.trim() }));
 
     /** the ticked modes drop their own profile and use yours (with Undo) */
     function useMine() {
@@ -80,11 +85,11 @@
     <div class="gprof">
         <!-- style:background-image sets only that one property, so an odd banner address can't add any other styling -->
         <div class="gpban" style:background-image={mp.banner ? `url("${coverCache.src(mp.banner).replace(/["\\\n\r]/g, encodeURIComponent)}")` : null}>
-            <!-- the profile editor is shared with every mode's header (library/profile-handlers.js) -->
+            <!-- the profile editor is shared with every mode's header (library/profile-handlers.ts) -->
             <button class="btn sm" data-act="profile-edit" data-k="universal">{mp.banner ? "Change banner" : "Add a banner"}</button>
         </div>
         <div class="gpbody">
-            <button class="gpav" data-act="profile-edit" data-k="universal" aria-label="Change picture">{@html avatarHTML(mp, 72)}</button>
+            <button class="gpav" data-act="profile-edit" data-k="universal" aria-label="Change picture"><Avatar {mp} size={72} /></button>
             <div class="gpf">
                 <input class="inp" id="set-name" value={p.name || ""} placeholder="Your name" aria-label="Your name" onchange={e => profile("name", "Name", e.currentTarget.value)} />
                 <textarea class="inp" id="set-bio" rows="3" placeholder="A line or two about you" aria-label="Bio" value={p.bio || ""} onchange={e => profile("bio", "Bio", e.currentTarget.value)}></textarea>

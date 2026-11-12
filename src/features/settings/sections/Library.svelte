@@ -10,17 +10,12 @@
     import Group from "../parts/Group.svelte";
     import Row from "../parts/Row.svelte";
     import Seg from "../parts/Seg.svelte";
+    import { applyDensity } from "../../core/navigation";
+    import KindTypes from "../parts/KindTypes.svelte";
 
-    // copies, so a change shows: the classic code changes these objects in place (see store.svelte.ts)
+    // copies, so a change shows: the older code changes these objects in place (see store.svelte.ts)
     const L = $derived({ ...store.meta.layout });
     const S = $derived({ ...store.meta.settings });
-    // the types list is still drawn by the classic scripts (core/types.js; Settings › Modes uses it too)
-    const types = $derived.by(() => {
-        void store.items;
-        void store.meta;
-        void store.ui;
-        return typesSettingsHTML();
-    });
 </script>
 
 <h2 class="sh">Library</h2>
@@ -39,7 +34,7 @@
     </Row>
 </Group>
 <Group title="Types">
-    {@html types}
+    <KindTypes />
     {#if !store.ui.typesAll}<button class="linkbtn" onclick={() => store.go({ typesAll: true })}>Show every kind of thing, not just what you have</button>{/if}
     <p class="hint">Types come from what's in your library and grow with it. Rename one, or fold one into another (ONA and OVA sit with anime series by default); what each thing is stored as never changes, so you can split them back out any time. Which types a mode shows: Settings › Modes.</p>
 </Group>

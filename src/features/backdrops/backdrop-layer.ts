@@ -2,14 +2,15 @@
 // ─────────────────────────────────────────────────────────────────
 //  Backdrops: putting yours behind the page
 //
-//  A theme whose backdrop is one of yours has html[data-backdrop="mine:<id>"] (core/theme.js). Then a canvas goes into the
-//  ambience layer (#amb, look/ambience.js) and draws it; any other backdrop takes the canvas away again, so nothing of
+//  A theme whose backdrop is one of yours has html[data-backdrop="mine:<id>"] (core/theme.ts). Then a canvas goes into the
+//  ambience layer (#amb, look/ambience.ts) and draws it; any other backdrop takes the canvas away again, so nothing of
 //  this runs unless you're using a backdrop you made. While you edit one in Settings › Backdrops, preview() shows that one
 //  instead, live, and done() goes back to the theme's.
 // ─────────────────────────────────────────────────────────────────
 
 import { Painter } from "./engine";
 import { myBackdrops, type Backdrop } from "./backdrop";
+import { changeListeners, meta } from "../core/core";
 
 const root = document.documentElement;
 let painter: Painter | null = null,

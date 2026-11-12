@@ -17,6 +17,10 @@
     import { pictureFrom } from "./picture";
     import { cleanLayer, cleanBackdrop, fromFile, MAX_LAYERS, MAX_BACKDROPS, MOTIONS, myBackdrops, newId, STARTERS, toFile, type Backdrop } from "./backdrop";
     import { done, preview } from "./backdrop-layer";
+    import { changeMeta, toast, undo } from "../core/core";
+    import { renderSide } from "../core/shell";
+    import { modeTheme } from "../core/theme";
+    import { setThemeVal } from "../settings/handlers";
 
     const backdrops = $derived(myBackdrops(store.meta.settings.backdrops));
     const using = $derived.by(() => {

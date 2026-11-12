@@ -87,6 +87,8 @@ export const api = {
     linkStart: (box: LinkBox): Promise<{ token: string; expires: number }> => post("/link/start", { box }),
     linkState: (): Promise<{ used: boolean; live: boolean }> => call("/link/state").then(r => r.json()),
     linkCancel: () => post("/link/cancel"),
+    /** whose account a code signs into, before it's used (it still works once afterwards) */
+    linkPeek: (token: string): Promise<{ name: string }> => post("/link/peek", { token }),
     /** sign this device in with a code it scanned (no passkey) */
     linkJoin: (token: string): Promise<SignedIn> => post("/link/join", { token }),
     audit: (): Promise<{ at: number; kind: string; detail: string }[]> => call("/audit").then(r => r.json()),

@@ -2,13 +2,14 @@
     src/features/settings/sections/Advanced.svelte
     ─────────────────────────────────────────────────────────────────
       Settings › Advanced: the app's name, the film catalogue's country, links on cards, and how long reading takes.
-      Each field saves as you change it (events.js: set-appname, set-region, set-links, data-speed).
+      Each field saves as you change it (events.ts: set-appname, set-region, set-links, data-speed).
     ─────────────────────────────────────────────────────────────────
 -->
 
 <script lang="ts">
     import { store } from "../../core/store.svelte";
     import Row from "../parts/Row.svelte";
+    import { APP_NAME, DEFAULT_SETTINGS } from "../../core/core";
 
     const S = $derived({ ...store.meta.settings });
     const SPEEDS: [string, string][] = [

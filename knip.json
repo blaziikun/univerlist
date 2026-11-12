@@ -2,17 +2,19 @@
   "$schema": "https://unpkg.com/knip@5/schema.json",
   "entry": [
     "src/main.ts",
-    "worker/*.js",
-    "tools/*.{js,mjs}",
-    "tests/**/*.{cjs,mjs,js}",
+    "worker/*.ts",
+    "tools/*.ts",
+    "tests/**/*.ts",
     "extensions/**/*.{js,mjs}"
   ],
   "project": [
-    "src/**/*.{ts,svelte,js}",
-    "worker/**/*.js",
-    "tools/**/*.{js,mjs}"
+    "src/**/*.{ts,svelte}",
+    "worker/**/*.ts",
+    "tools/**/*.ts",
+    "tests/**/*.ts"
   ],
-  "ignore": [
-    "src/features/*/*.js"
-  ]
+  "ignoreExportsUsedInFile": {
+    "interface": true,
+    "type": true
+  }
 }

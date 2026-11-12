@@ -1,4 +1,4 @@
--- How much each account has used R2 today (reset each day), so nobody can run up the bill: see DAILY in worker/sync.js.
+-- How much each account has used R2 today (reset each day), so nobody can run up the bill: see DAILY in worker/sync.ts.
 ALTER TABLE users ADD COLUMN day INTEGER NOT NULL DEFAULT 0;
 ALTER TABLE users ADD COLUMN writes INTEGER NOT NULL DEFAULT 0;
 ALTER TABLE users ADD COLUMN reads INTEGER NOT NULL DEFAULT 0;

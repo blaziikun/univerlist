@@ -3,14 +3,15 @@
     ─────────────────────────────────────────────────────────────────
       Settings › Private collection: a separate library behind a passphrase. Create it, open or lock it, and (while it's
       open) its own mode name, the types that stay in it and extra places to search. Its buttons and fields are handled
-      with the vault (library/profile-handlers.js: vault-*; core/nav-handlers.js: private-toggle; core/events.js:
-      vault-auto; settings.js: sp-*), and what you set here is stored encrypted inside the collection, never in the clear.
+      with the vault (library/profile-handlers.ts: vault-*; core/nav-handlers.ts: private-toggle; core/events.ts:
+      vault-auto; settings.ts: sp-*), and what you set here is stored encrypted inside the collection, never in the clear.
     ─────────────────────────────────────────────────────────────────
 -->
 
 <script lang="ts">
     import { store } from "../../core/store.svelte";
     import Row from "../parts/Row.svelte";
+    import { MEDIA, MEDIA_KEYS, meta, SEALED_MODE, ui, vault, vaultReady } from "../../core/core";
 
     const AUTO: [number, string][] = [
         [0, "Only when I lock it or close UniverList"],
@@ -18,7 +19,7 @@
         [15, "After 15 minutes in the background"],
         [60, "After an hour in the background"],
     ];
-    // the vault is changed in place by the classic code: read it again whenever anything changes
+    // the vault is changed in place by the older code: read it again whenever anything changes
     const v = $derived.by(() => {
         void store.meta;
         void store.ui;

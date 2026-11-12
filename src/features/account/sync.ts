@@ -24,6 +24,10 @@
 import { store } from "../core/store.svelte";
 import { api, SyncError } from "./api";
 import { keptKey, openData, sealData } from "./crypto";
+import { APP_V, change, changeListeners, flushSave } from "../core/core";
+import { render } from "../core/navigation";
+import { builtinOn } from "../extensions/builtins";
+import { applyParts, packParts } from "../import-export/packs";
 
 const LS = "ul-sync",
     BASE = "ul-sync-base";
@@ -70,7 +74,7 @@ function saveBase(library: Record<string, unknown>) {
 type Parts = Record<string, unknown> & { library: Record<string, unknown> };
 /** this device's library, in the shape an import takes (one flat library, the Learning Centre whole) */
 function local(): Parts {
-    const p = packParts() as { library?: Record<string, object>; academic?: unknown };
+    const p = packParts();
     return {
         ...p,
         library: Object.assign({}, ...Object.values(p.library || {})),

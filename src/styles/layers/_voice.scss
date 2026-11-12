@@ -19,14 +19,14 @@
 .panel h3 .hint, .pwh .hint { font-family: var(--f-ui); font-size: 12.5px; font-weight: 400; color: var(--muted); }
 
 // small labels: sentence case, in the UI face
-.label, .ilab, .field label, .lbsel .lbk, .gsortl, .tile .k, .ruled dt, .libt, .gsg, .palette .grp, .gssub, .sl,
+.label, .ilab, .field label, .lbsel .lbk, .gsortl, .tile .k, .ruled dt, .libt, .gsg, .gssub, .sl,
 .sh-mode, .eyebrow, .welcome2 .eyebrow, .logo p, .cs-meta, .sc small, .pwmh span, .pwm i, .pwpill, .gsg span {
     font-family: var(--f-ui); text-transform: none; letter-spacing: 0;
 }
 .label { font-size: 12.5px; font-weight: 600; color: var(--accent-ink); }
 .ilab, .field label, .tile .k, .ruled dt, .gsortl { font-size: 12px; font-weight: 500; color: var(--muted); }
 .lbsel .lbk { font-size: 12px; color: var(--muted); }
-.sl, .gsg, .palette .grp, .gssub { font-size: 12px; font-weight: 600; color: var(--muted); }
+.sl, .gsg, .gssub { font-size: 12px; font-weight: 600; color: var(--muted); }
 .sh-mode, .libt { font-size: 12.5px; font-weight: 500; }
 .eyebrow, .welcome2 .eyebrow { font-size: 13px; font-weight: 500; }
 .logo p { font-size: 11.5px; }

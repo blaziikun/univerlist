@@ -1,6 +1,8 @@
 node_modules/
 dist/
 dist-file/
+dist-e2e/
+dist-file-e2e/
 .wrangler/
 .dev.vars
 tests/out/

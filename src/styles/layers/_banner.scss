@@ -120,11 +120,6 @@ main.main,.app.side-open main.main{padding:calc(var(--top-h) + 22px) 32px 90px}
 .ftile .why{display:block}
 
 // ── search ──
-.palette{top:14vh;width:min(700px,calc(100% - 24px));border-radius:var(--r)}
-.pal-in{display:flex;align-items:center;gap:10px;padding:0 16px;border-bottom:1px solid var(--line)}
-.pal-in span{font-size:18px;color:var(--muted)}
-.pal-in input{border:0!important;padding:18px 0!important;font-size:18px!important;flex:1}
-.pal-in kbd{font-family:var(--f-mono);font-size:10.5px;color:var(--muted);border:1px solid var(--line2);border-radius:4px;padding:1px 5px}
 
 // ── settings ──
 main.is-settings{padding-top:calc(var(--top-h) + 26px)}

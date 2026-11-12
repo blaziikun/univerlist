@@ -7,25 +7,28 @@
   "license": "AGPL-3.0-only",
   "scripts": {
     "dev": "vite",
-    "build": "vite build && node tools/pack-extensions.mjs extensions dist/extensions",
-    "build:file": "vite build --mode file",
+    "build": "vite build && node tools/pack-extensions.ts extensions dist/extensions && node tools/no-test-hook.ts dist",
+    "build:file": "vite build --mode file && node tools/no-test-hook.ts dist-file",
+    "build:e2e": "vite build --mode e2e && node tools/pack-extensions.ts extensions dist-e2e/extensions && pnpm build:e2e:file",
+    "build:e2e:file": "vite build --mode file-e2e && node tools/pack-extensions.ts extensions dist-file-e2e/extensions && node tools/no-test-hook.ts --has dist-file-e2e",
     "preview": "pnpm build && wrangler dev",
     "deploy": "pnpm build && wrangler deploy",
-    "check": "svelte-check --tsconfig ./tsconfig.json",
+    "check": "svelte-check --tsconfig ./tsconfig.json && tsc -p tests && tsc -p worker",
     "test": "pnpm lint && pnpm check && pnpm test:unit && pnpm test:e2e",
     "test:unit": "vitest run",
-    "test:e2e": "pnpm build:file && node tools/pack-extensions.mjs extensions dist-file/extensions && node tests/e2e/run.mjs",
-    "test:stress": "pnpm build:file && node tests/stress/memory.cjs && node tests/stress/library-load.cjs && node tests/stress/reader-big.cjs",
-    "lint": "biome lint && knip",
-    "guard": "node tools/guard.mjs"
+    "test:e2e": "pnpm build:e2e && node tests/e2e/run.ts",
+    "test:stress": "pnpm build:e2e:file && node tests/stress/memory.ts && node tests/stress/insights.ts && node tests/stress/overview.ts && node tests/stress/shell.ts && node tests/stress/library-load.ts && node tests/stress/reader-big.ts",
+    "lint": "biome check && knip",
+    "guard": "node tools/guard.ts"
   },
   "engines": {
-    "node": ">=22"
+    "node": ">=22.18"
   },
   "packageManager": "pnpm@10.18.3",
   "devDependencies": {
     "@biomejs/biome": "2.2.4",
     "@sveltejs/vite-plugin-svelte": "^7.3.1",
+    "@types/node": "26.6.6",
     "axe-core": "4.14.0",
     "esbuild": "^0.28.2",
     "fflate": "^0.8.3",
@@ -58,9 +61,11 @@
     "@fontsource/sora": "5.3.0",
     "@fontsource/space-grotesk": "^5.3.0",
     "@fontsource/zen-kaku-gothic-new": "5.3.1",
+    "@leeoniya/ufuzzy": "1.0.19",
     "@simplewebauthn/browser": "14.0.0",
     "@simplewebauthn/server": "14.0.3",
     "hls.js": "1.7.3",
+    "papaparse": "5.7.0",
     "uqr": "0.1.3"
   },
   "pnpm": {

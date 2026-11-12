@@ -3,9 +3,10 @@
     ─────────────────────────────────────────────────────────────────
       Settings › Data, sources & keys: bring things in, take everything with you (with your keys sealed by a passphrase),
       a library folder kept up to date, your free API keys, what happens online, and erasing everything.
-      The buttons are handled by the classic code under the same names (import-export/handlers.js: import-*, export-*,
-      folder-*, offline-*; settings/handlers.js: key-*, erase*; library/item-handlers.js: coverpick-start; settings.js:
-      igdb-copy), so this only draws it. A few panels are still the classic HTML (games update, proxy status, work status).
+      The buttons are handled by the older code under the same names (import-export/handlers.ts: import-*, export-*,
+      folder-*, offline-*; settings/handlers.ts: key-*, erase*; library/item-handlers.ts: coverpick-start; settings.ts:
+      igdb-copy), so this only draws it. Its own parts are in data/: Your games with LaunchBox's panel, the proxy's
+      sources, and the line about work going on in the background.
     ─────────────────────────────────────────────────────────────────
 -->
 
@@ -13,6 +14,16 @@
     import { onMount } from "svelte";
     import { store } from "../../core/store.svelte";
     import Row from "../parts/Row.svelte";
+    import { coverCache, fmtDate, KEYS, meta, ui } from "../../core/core";
+    import { renderMain } from "../../core/shell";
+    import { ago } from "../../core/views";
+    import { folderSync } from "../../import-export/packs";
+    import { KEY_INFO, offlineTargets } from "../settings";
+    import { siteShares, UNIVERLIST_WORKER } from "../../sources/proxy";
+    import GamesPanel from "./data/GamesPanel.svelte";
+    import ProxyStatus from "./data/ProxyStatus.svelte";
+    import WorkStatus from "./data/WorkStatus.svelte";
+    import { testKey } from "../../sources/sources";
 
     const SCOPES: [string, string][] = [
         ["missing", "This mode: no cover yet"],
@@ -46,8 +57,8 @@
             ks: { ...((ui.keyState || {}) as Record<string, string>) },
             keys: { ...KEYS },
             shares: { ...siteShares },
-            x: ui.expRun as { running?: boolean; done?: number; total?: number; note?: string } | null,
-            o: ui.offline as { running?: boolean; done?: number; total?: number; note?: string } | null,
+            x: ui.expRun ?? null,
+            o: ui.offline ?? null,
             al: al || S.anilistUser ? String(al?.name || S.anilistUser) : "",
             impNote: String(ui.impNote || ""),
             folder: {
@@ -56,9 +67,6 @@
                 state: folderSync.state,
                 lastSaved: folderSync.lastSaved,
             },
-            games: gamesUpdateHTML(),
-            px: KEYS.igdb ? pxStatusHTML() : "",
-            work: statusPanelHTML(),
             imgs: imgs.length,
             have: imgs.filter(u => coverCache.urls.has(u)).length,
             fails: Object.keys(coverCache.hostFails),
@@ -107,7 +115,7 @@
         <button class="btn gold" data-act="import-url">Bring it in</button>
         <button class="btn ghost" data-act="open-paste">Paste a list of titles…</button>
     </div>
-    <!-- always text from the app itself (import-export/handlers.js import-url), with a link in it -->
+    <!-- always text from the app itself (import-export/handlers.ts import-url), with a link in it -->
     {#if v.impNote}<p class="hint">{@html v.impNote}</p>{/if}
 </div>
 
@@ -128,7 +136,7 @@
 <div class="panel">
     <h3>Take it with you</h3>
     <div class="bar">
-        <!-- opens the dialog where you choose what goes in (import-export/export-dialog.js) -->
+        <!-- opens the dialog where you choose what goes in (import-export/export-dialog.ts) -->
         <button class="btn gold" data-act="export-open" disabled={!!v.x?.running}>{v.x?.running ? `Packing pictures… ${v.x.done}/${v.x.total}` : "Download everything…"}</button>
         <button class="btn" data-act="export-json">Backup file (.json)</button>
         {#if v.x?.note}<span class="hint">{v.x.note}</span>{/if}
@@ -163,7 +171,7 @@
     {/if}
 </div>
 
-{@html v.games}
+<GamesPanel />
 
 <div class="panel">
     <h3>Your own keys (optional)</h3>
@@ -192,14 +200,14 @@
                             </li>
                             <li>Paste the Worker's address (like <code>https://univerlist.yourname.workers.dev</code>) here and press Save & test.</li>
                         </ol>
-                        {@html v.px}
+                        {#if v.keys.igdb}<ProxyStatus />{/if}
                         <pre class="code">{UNIVERLIST_WORKER}</pre>
                         <button class="btn sm" data-act="igdb-copy">Copy the script</button>
                     </details>
                 {/if}
             </div>
             <div class="bar">
-                <!-- hidden until you press the eye (core/actions.js key-eye) -->
+                <!-- hidden until you press the eye (core/actions.ts key-eye) -->
                 <input class="inp" id={`key-${k}`} type="password" value={v.keys[k]} placeholder={k === "igdb" ? "https://igdb.yourname.workers.dev" : "Paste key"} autocomplete="off" spellcheck="false" style="width:240px;font-family:var(--f-mono);font-size:12px" aria-label={`${name} key`} />
                 <button class="btn sm ghost keyeye" data-act="key-eye" data-k={k} title="Show or hide" aria-label="Show or hide the key">👁</button>
                 <button class="btn sm" data-act="key-save" data-k={k}>Save & test</button>
@@ -238,7 +246,7 @@
             <button class="btn" data-act="coverpick-start">Choose covers one by one</button>
         </div>
     </Row>
-    <div id="workstat">{@html v.work}</div>
+    <div id="workstat"><WorkStatus /></div>
 </div>
 
 <div class="panel">

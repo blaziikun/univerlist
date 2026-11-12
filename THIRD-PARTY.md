@@ -11,11 +11,13 @@ UniverList's own code is GNU AGPL-3.0 ([LICENSE](LICENSE)). These parts are othe
 | SimpleWebAuthn (browser and server) | MIT |
 | uqr (QR codes) | MIT |
 | hls.js (adaptive streams from your own media server, outside Safari; loaded only when one plays) | Apache-2.0 ([full text](https://www.apache.org/licenses/LICENSE-2.0)) |
+| Papa Parse (reading CSV imports; loaded only when one starts) | MIT ([full text](https://github.com/mholt/PapaParse/blob/master/LICENSE)) |
+| uFuzzy (searching your library) | MIT ([full text](https://github.com/leeoniya/uFuzzy/blob/main/LICENSE)) |
 | Workbox (offline support) | MIT |
 
 ## Used only to build and test (never shipped)
 
-fflate (the identity guard's zip reading), Vite, vite-plugin-pwa, vite-plugin-singlefile, Sass, TypeScript, svelte-check, Biome, Knip, Vitest, happy-dom, Playwright,
+fflate (zips in the tests, the identity guard and packing the extensions), Vite, vite-plugin-pwa, vite-plugin-singlefile, Sass, TypeScript, svelte-check, Biome, Knip, Vitest, happy-dom, Playwright,
 esbuild and Wrangler (MIT, Apache-2.0 or ISC), and axe-core (MPL-2.0).
 
 ## Data from catalogues
