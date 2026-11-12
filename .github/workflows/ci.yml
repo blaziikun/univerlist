@@ -12,6 +12,7 @@ jobs:
   test:
     # pinned: "ubuntu-latest" became Ubuntu 26 in October 2026, which Playwright doesn't support yet
     runs-on: ubuntu-24.04
+    timeout-minutes: 40 # a normal run takes 10 to 15; anything stuck stops here instead of running for 6 hours
     steps:
       - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
         with: { fetch-depth: 0, persist-credentials: false } # the whole history, so the secret scan sees every commit
@@ -35,7 +36,10 @@ jobs:
         env:
           PRIVATE_WORDS: ${{ secrets.PRIVATE_WORDS }}
       - run: pnpm audit --prod --audit-level=high   # what ships has no known serious vulnerability
-      - run: pnpm exec playwright install --with-deps chromium
+      # only the headless browser the tests use (half the download). The download sometimes stalls: give up after 10
+      # minutes rather than hang, and re-run the job
+      - run: pnpm exec playwright install --with-deps --only-shell chromium
+        timeout-minutes: 10
       - run: pnpm lint                  # Biome (bugs, and the layout every file keeps) and Knip (unused files and packages)
       - run: pnpm check                 # types: the app, its Svelte components, the tests and tools, the Worker
       - run: pnpm test:unit             # the Worker, the proxy, the store
@@ -52,6 +56,7 @@ jobs:
     runs-on: ubuntu-24.04
     # "production": in Settings › Environments you can limit it to main and require your approval before each deploy
     environment: production
+    timeout-minutes: 15
     concurrency: { group: deploy, cancel-in-progress: false } # one deploy at a time, in order
     steps:
       - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
