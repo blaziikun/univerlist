@@ -17,7 +17,7 @@ const TAGS = ["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"];
     await setup(c);
     const p = await c.newPage(),
         errs: string[] = [];
-    p.on("pageerror", e => errs.push(e.message));
+    p.on("pageerror", e => errs.push(e.message.replace(/\s+/g, " ").slice(0, 300))); // one line each, so all of it shows
     const ev = evaluator(p);
     // skip: rules left out for one sweep, each with its reason where it's called
     // leave: elements left out of the sweep (their look is known and kept), each with its reason where it's called

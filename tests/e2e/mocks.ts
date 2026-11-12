@@ -438,6 +438,13 @@ function anilist(body: { query: string; variables?: { id?: number; name?: string
 }
 async function setup(ctx: BrowserContext) {
     await ctx.route(/fonts\.(googleapis|gstatic)/, r => r.abort());
+    // YouTube's own player, framed by ours: a stand-in page, so no test runs YouTube's scripts. On an open network (CI)
+    // they load, can't find the made-up video, and throw errors of their own that the tests would count as the app's
+    await ctx.route(/^https:\/\/(www\.)?youtube(-nocookie)?\.com\//, r =>
+        r.fulfill({ contentType: "text/html", body: "<!doctype html><title>YouTube</title><p>video</p>" })
+    );
+    // lookups no test answers: unreachable, as offline, so a run never depends on what these sites say today
+    await ctx.route(/itunes\.apple\.com|archive\.org/, r => r.abort());
     await ctx.route(/graphql\.anilist\.co/, r => {
         if (r.request().method() === "OPTIONS")
             return r.fulfill({
