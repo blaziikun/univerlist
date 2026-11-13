@@ -14,11 +14,13 @@
   Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=(), usb=(), interest-cohort=()
 
 # Extensions run here, in a sandboxed frame with no access to the app: their code arrives by message and runs inline,
-# so only this page allows inline scripts, and only the app may frame it.
+# so only this page allows inline scripts, and only the app may frame it. The frame is sandboxed by the app's own
+# <iframe sandbox="allow-scripts">, not by a "sandbox" line here: Firefox (and Zen) read 'self' as nothing on a page
+# that sandboxes itself, so frame-ancestors 'self' would refuse the app and no extension would start (tests/e2e/csp.ts)
 /ext-host.html
   ! Content-Security-Policy
   ! X-Frame-Options
-  Content-Security-Policy: default-src 'none'; script-src 'unsafe-inline'; connect-src https: http: wss:; img-src https: data:; frame-ancestors 'self'; sandbox allow-scripts
+  Content-Security-Policy: default-src 'none'; script-src 'unsafe-inline'; connect-src https: http: wss:; img-src https: data:; frame-ancestors 'self'
 
 # built files carry a hash of their contents in the name, so a browser can keep them for good
 /assets/*

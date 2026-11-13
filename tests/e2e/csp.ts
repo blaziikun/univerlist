@@ -131,6 +131,14 @@ const srv = http.createServer((req, res) => {
                 !!document.querySelector('iframe[src="ext-host.html"]')
         )
     );
+    // Firefox and Zen (not run here) read 'self' as nothing on a page whose own policy sandboxes it, so ext-host.html's
+    // frame-ancestors 'self' would then refuse the app and no extension would start. The app's frame does the sandboxing
+    const host = headersFor("/ext-host.html")["content-security-policy"] || "";
+    ok(
+        "ext-host.html doesn't sandbox itself (the app's frame does), so Firefox lets the app frame it",
+        /frame-ancestors 'self'/.test(host) && !/(^|;)\s*sandbox\b/.test(host),
+        host
+    );
     // an extension's own code reaches its companion and nothing else (its policy, extPolicy): here the companion is a small
     // server at 127.0.0.1, and "elsewhere" is the same server under another name, which the site's policy alone allows
     const comp = http.createServer((_req, res) => {
