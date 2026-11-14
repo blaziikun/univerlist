@@ -133,10 +133,20 @@ const srv = http.createServer((req, res) => {
     );
     // Firefox and Zen (not run here) read 'self' as nothing on a page whose own policy sandboxes it, so ext-host.html's
     // frame-ancestors 'self' would then refuse the app and no extension would start. The app's frame does the sandboxing
-    const host = headersFor("/ext-host.html")["content-security-policy"] || "";
+    // and the offline copy (sw.js) never keeps ext-host.html: a kept copy carries the headers it came with until the file
+    // itself changes, so a fix to its headers wouldn't reach anyone who had visited before
+    const sw = fs.readFileSync(path.join(DIST, "sw.js"), "utf8");
+    ok(
+        "ext-host.html isn't kept offline, and is never answered with the app",
+        !/url:\s*"ext-host\.html"/.test(sw) && sw.includes("/^\\/ext-host(\\.html)?$/"),
+        (sw.match(/denylist:\[[^\]]*\]/) || [""])[0]
+    );
+    // on both paths: Cloudflare sends /ext-host.html on to /ext-host (tests/e2e/ext-on-cloudflare.ts checks it for real)
+    const host = headersFor("/ext-host.html")["content-security-policy"] || "",
+        pretty = headersFor("/ext-host")["content-security-policy"] || "";
     ok(
         "ext-host.html doesn't sandbox itself (the app's frame does), so Firefox lets the app frame it",
-        /frame-ancestors 'self'/.test(host) && !/(^|;)\s*sandbox\b/.test(host),
+        host === pretty && /frame-ancestors 'self'/.test(host) && !/(^|;)\s*sandbox\b/.test(host),
         host
     );
     // an extension's own code reaches its companion and nothing else (its policy, extPolicy): here the companion is a small

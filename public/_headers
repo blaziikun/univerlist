@@ -16,8 +16,14 @@
 # Extensions run here, in a sandboxed frame with no access to the app: their code arrives by message and runs inline,
 # so only this page allows inline scripts, and only the app may frame it. The frame is sandboxed by the app's own
 # <iframe sandbox="allow-scripts">, not by a "sandbox" line here: Firefox (and Zen) read 'self' as nothing on a page
-# that sandboxes itself, so frame-ancestors 'self' would refuse the app and no extension would start (tests/e2e/csp.ts)
+# that sandboxes itself, so frame-ancestors 'self' would refuse the app and no extension would start (tests/e2e/csp.ts).
+# Cloudflare answers /ext-host.html with a redirect to /ext-host, so the rules are on both: on /ext-host.html alone, the
+# page arrived with the app's rules (no framing, no inline code) and no extension started (tests/e2e/ext-on-cloudflare.ts)
 /ext-host.html
+  ! Content-Security-Policy
+  ! X-Frame-Options
+  Content-Security-Policy: default-src 'none'; script-src 'unsafe-inline'; connect-src https: http: wss:; img-src https: data:; frame-ancestors 'self'
+/ext-host
   ! Content-Security-Policy
   ! X-Frame-Options
   Content-Security-Policy: default-src 'none'; script-src 'unsafe-inline'; connect-src https: http: wss:; img-src https: data:; frame-ancestors 'self'

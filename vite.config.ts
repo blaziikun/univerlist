@@ -75,7 +75,9 @@ export default defineConfig(({ mode }) => {
           // the app itself is kept for offline use at once. Fonts and the stream player (hls.js) aren't: each is
           // fetched the first time it's needed, then kept, so a visit doesn't download every theme's fonts
           globPatterns: ["**/*.{html,js,css,svg,png}"],
-          globIgnores: ["**/hls-*.js"],
+          // ext-host.html is never kept: its security rules are its headers (public/_headers), and a kept copy keeps
+          // the headers it came with until the file itself changes, so a fix to them would never reach you
+          globIgnores: ["**/hls-*.js", "ext-host.html"],
           runtimeCaching: [
             {
               urlPattern: ({ url }) => url.pathname.startsWith("/assets/") && /\.(woff2|js)$/.test(url.pathname),
@@ -85,7 +87,9 @@ export default defineConfig(({ mode }) => {
           ],
           maximumFileSizeToCacheInBytes: 6 * 1024 * 1024,
           // the redirects in public/_redirects go to the network, not to the app kept offline
-          navigateFallbackDenylist: [/^\/api\//, /^\/extensions\//, /^\/(source|issues|report|sponsor)$/]
+          // ext-host.html too (and /ext-host, where Cloudflare sends it): an extension's frame is a page load, and it must be
+          // that page, from the site, never the app
+          navigateFallbackDenylist: [/^\/api\//, /^\/extensions\//, /^\/(source|issues|report|sponsor)$/, /^\/ext-host(\.html)?$/]
         }
       })
     ]
