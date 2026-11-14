@@ -65,7 +65,7 @@
     "@simplewebauthn/browser": "14.0.0",
     "@simplewebauthn/server": "14.1.0",
     "hls.js": "1.7.4",
-    "papaparse": "5.7.0",
+    "papaparse": "5.7.1",
     "uqr": "0.1.3"
   }
 }
