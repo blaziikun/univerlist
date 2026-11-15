@@ -9,7 +9,7 @@ import { queueSeasonCombine } from "./parts";
 import { renderSideStatus } from "./shell";
 import { folderSync } from "../import-export/packs";
 import { pictureType } from "../import-export/export-zip";
-import { lcConvertOld, lcOnePerCourse } from "../learning-centre/learning";
+import { lcConvertOld } from "../learning-centre/learning-data";
 import { builtinOn } from "../extensions/builtins";
 import { afterChange } from "./navigation";
 import type {
@@ -909,7 +909,7 @@ export const meta: Meta = {
     orders: {}, // shelf look: how each mode's shelf is arranged, by cover: { modeId: [ids] }
     myOrder: {}, // my order: ranking and watch order, used within each status group: { modeId: [ids] }
     themes: null, // the theme library, shared by every mode (filled from the presets)
-    courses: { v: 2, subjects: [], paths: [] }, // the Learning Centre: your subjects and paths (stages → modules → readings)
+    courses: { v: 3, courses: [], gone: {} }, // the Learning Centre: your courses (topics, books by level, programmes)
     vault: null, // private entries, encrypted with your passphrase
     settings: clone(DEFAULT_SETTINGS),
     layout: clone(DEFAULT_LAYOUT),
@@ -1382,7 +1382,7 @@ function migrateLearning() {
         });
         ac.extra = ["learn", "paths", ...(ac.extra || []).filter(x => !["learn", "paths", "courses"].includes(x))];
         if (Array.isArray(ac.blocks)) ac.blocks = ac.blocks.filter(x => x.k !== "courses");
-        meta.courses = typeof lcConvertOld === "function" ? lcConvertOld(meta.courses) : lcEmpty();
+        meta.courses = lcConvertOld(meta.courses);
         if (ui.tab === "courses") ui.tab = "paths";
     }
     ac.space = "learning-centre";
@@ -1401,11 +1401,10 @@ function migrateLearning() {
         if (!ac.sort || ac.sort === "rank") ac.sort = "order";
         if (ui.tab === "paths") ui.tab = "learn";
     }
-    if (!meta.courses || meta.courses.v !== 2)
-        meta.courses = typeof lcConvertOld === "function" ? lcConvertOld(meta.courses) : lcEmpty(); // an old backup's academic part
-    if (typeof lcOnePerCourse === "function") lcOnePerCourse(meta.courses); // one pathway per course, nothing dropped
+    // an older version's Learning Centre (an old backup's academic part, or the second version's courses and
+    // pathways apart) in today's shape; nothing is dropped
+    if (!meta.courses || meta.courses.v !== 3) meta.courses = lcConvertOld(meta.courses);
 }
-export const lcEmpty = () => ({ v: 2 as const, subjects: [], paths: [], curricula: {} });
 /** a copy of one of the modes every library starts with */
 const defaultMode = (id: string): Mode => clone(DEFAULT_MODES.find(x => x.id === id) || DEFAULT_MODES[0]);
 // Music arrives: a Music mode after the Learning Centre (so the modes you know keep their place and shortcut), and the Hub leaves albums to it (as it does games). Once, remembered.
@@ -1657,7 +1656,9 @@ export function migrateV10() {
         changed = true;
     };
     for (const T of Object.values(meta.themes || {})) rename(T, "backdrop");
-    for (const S of (meta.courses && meta.courses.subjects) || []) rename(S, "kind");
+    // a course's "world" was once its kind (in the older shape, courses were "subjects")
+    const ac = fieldsOf(meta.courses);
+    for (const S of [...recordsOf(ac.subjects), ...recordsOf(ac.courses)]) rename(S, "kind");
     if (changed) metaDirty = true;
 }
 export function migrateV8() {

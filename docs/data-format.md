@@ -14,7 +14,8 @@ profile-export_<name>_<date>.zip
 │   ├── profile.json
 │   ├── preferences.json       settings, plus each mode's tabs, views, shelves and blocks
 │   └── themes.json
-├── academic.json              the Learning Centre: your subjects and paths ({ v: 2, subjects, paths })
+├── academic.json              the Learning Centre: { v: 3, courses, def, gone } (each course: its topics, books by
+│                              topic and level with what each needs, programmes, and a degree's modules)
 ├── extensions/<id>/           public extensions you installed, each with a state.json
 ├── private/
 │   ├── keys.json              your keys, sealed with your backup passphrase (AES-256-GCM, PBKDF2 × 310,000)

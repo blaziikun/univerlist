@@ -41,7 +41,7 @@ import type { Item, WatchShow } from "../../src/features/core/model";
     const state = () =>
         ev(() => ({
             rows:
-                document.querySelectorAll('#cinema .cin-side [data-act="cin-ep"]').length ||
+                document.querySelectorAll('#cinema [data-act="cin-ep"]').length ||
                 document.querySelectorAll('[data-act="watch-src"]').length,
             eps: (__ulTest.W.seasons[__ulTest.W.si] || {}).eps ? __ulTest.W.seasons[__ulTest.W.si].eps!.length : 0,
             loading: !!(__ulTest.W.player && __ulTest.W.player.loading),

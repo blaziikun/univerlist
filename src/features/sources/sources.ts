@@ -574,6 +574,27 @@ async function jikanSearch(q: string, type: string, signal?: AbortSignal): Promi
         };
     });
 }
+/** an anime's episode names on MyAnimeList, one page of a hundred at a time (page 1: episodes 1 to 100). MyAnimeList
+ *  names the episodes of nearly every anime, long-running and older ones included, where AniList and TVmaze often
+ *  don't; it has no pictures or descriptions for them */
+export async function jikanEpisodes(
+    malId: number,
+    page: number,
+    signal?: AbortSignal
+): Promise<{ eps: { e: number; title: string; date: string }[]; more: boolean }> {
+    const wait = JK.last + JK.gap - Date.now();
+    if (wait > 0) await sleep(wait);
+    JK.last = Date.now();
+    const j = await getJSON(`https://api.jikan.moe/v4/anime/${malId}/episodes?page=${page}`, signal);
+    return {
+        eps: recordsOf(at(j, "data")).flatMap(d => {
+            const e = numOf(d.mal_id),
+                title = textOf(d.title);
+            return e && title ? [{ e, title, date: textOf(d.aired).slice(0, 10) }] : [];
+        }),
+        more: !!at(j, "pagination", "has_next_page"),
+    };
+}
 async function jikanPictures(type: string, malId: number | string, signal?: AbortSignal): Promise<string[]> {
     const j = await getJSON(`https://api.jikan.moe/v4/${type}/${malId}/pictures`, signal);
     return recordsOf(at(j, "data"))
@@ -1047,6 +1068,31 @@ export async function tmdb(path: string, params: Record<string, string> = {}, si
         "?" +
         new URLSearchParams({ ...params, ...(bearer ? {} : { api_key: key }) });
     return getJSON(u, signal, bearer ? { headers: { Authorization: "Bearer " + key } } : {});
+}
+/** a show's episodes on TMDB (names, descriptions, stills), season by season: for a show TVmaze doesn't know */
+export async function tmdbEpisodes(id: number, signal?: AbortSignal): Promise<Episode[]> {
+    const show = fieldsOf(await tmdb(`/tv/${id}`, {}, signal)),
+        nums = recordsOf(show.seasons)
+            .map(x => numOf(x.season_number) ?? 0)
+            .filter(n => n > 0)
+            .slice(0, 40),
+        out: Episode[] = [];
+    for (const n of nums) {
+        const d = fieldsOf(await tmdb(`/tv/${id}/season/${n}`, {}, signal).catch(() => null));
+        for (const e of recordsOf(d.episodes)) {
+            const still = textOf(e.still_path);
+            out.push({
+                s: n,
+                e: numOf(e.episode_number) ?? 0,
+                title: textOf(e.name),
+                date: textOf(e.air_date),
+                runtime: numOf(e.runtime) ?? null,
+                image: still ? "https://image.tmdb.org/t/p/w300" + still : "",
+                about: stripMd(textOf(e.overview)).slice(0, 300),
+            });
+        }
+    }
+    return out.filter(e => e.e > 0);
 }
 /** a TMDB result's genre ids, from a search (genre_ids) or a title's details (genres) */
 const tmdbGenreIds = (r: Record<string, unknown>): unknown[] =>
@@ -2121,11 +2167,12 @@ export async function alEpisodes(
 ): Promise<{
     total: number | null;
     runtime: number | null;
+    mal: number | null;
     eps: { title: string; thumbnail: string; url: string; site: string }[];
     links: { site: string; url: string }[];
 }> {
     const d = await AL.q(
-        `query($id:Int){ Media(id:$id){ episodes duration nextAiringEpisode { episode } streamingEpisodes { title thumbnail url site } externalLinks { site url type } } }`,
+        `query($id:Int){ Media(id:$id){ idMal episodes duration nextAiringEpisode { episode } streamingEpisodes { title thumbnail url site } externalLinks { site url type } } }`,
         { id: alId },
         signal,
         0,
@@ -2138,6 +2185,7 @@ export async function alEpisodes(
     return {
         total: numOf(media.episodes) || (next ? next - 1 : null),
         runtime: numOf(media.duration) ?? null,
+        mal: numOf(media.idMal) || null,
         eps: recordsOf(media.streamingEpisodes).map(e => ({
             title: textOf(e.title),
             thumbnail: textOf(e.thumbnail),

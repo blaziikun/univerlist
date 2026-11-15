@@ -75,6 +75,14 @@ if (safeUrl(DONATE_URL)) {
     foot.id = "donatefoot";
     document.body.append(foot);
     mount(DonateLink, { target: foot, props: { cls: "donatefoot" } });
+    // it steps aside in the middle of a long page, so it never sits over a button there; at the top and at the end
+    // (where the page leaves room for it) it's back
+    const mid = () => {
+        const end = document.documentElement.scrollHeight - innerHeight;
+        document.body.classList.toggle("midpage", scrollY > 60 && scrollY < end - 60);
+    };
+    addEventListener("scroll", mid, { passive: true });
+    addEventListener("resize", mid, { passive: true });
 }
 // The pages Svelte draws (a mode's page with its tabs, Settings, the guide: core/pages.ts): the page code asks for one
 // when you open it, and lets it go when you leave. If the app opened on one before this ran, it's drawn now.

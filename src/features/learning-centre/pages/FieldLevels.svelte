@@ -1,9 +1,8 @@
 <!--
     src/features/learning-centre/pages/FieldLevels.svelte
     ─────────────────────────────────────────────────────────────────
-      Your level in each of a course's fields, on the six-step scale (learn-lvl), a field short of the level you're
-      aiming for marked, removing one (learn-field-del), and a box to add one (Enter adds it, and the box stays ready
-      for the next).
+      Your level in each of a course's fields, on the six-step scale (learn-lvl), removing one (learn-field-del), and a
+      box to add one (Enter adds it, and the box stays ready for the next). Compact: it sits in the course's ⋯.
     ─────────────────────────────────────────────────────────────────
 -->
 
@@ -20,7 +19,6 @@
             return { f, v, gap: !!S.goal && v < S.goal };
         })
     );
-    const SCALE = LEVELS.slice(1);
 
     function add(e: KeyboardEvent & { currentTarget: HTMLInputElement }) {
         if (e.key !== "Enter") return;
@@ -35,6 +33,5 @@
     }
 </script>
 
-<section class="panel"><h3 class="pwh">Your level in each field</h3><div class="lfields">{#each rows as r, i (i + r.f)}<div class="lfield{r.gap ? ' gap' : ''}"><span class="lf">{r.f}</span><div class="ldots" role="group" aria-label="{r.f} level">{#each LEVELS as [n], l}<button class="ld{l <= r.v && r.v ? ' on' : ''}{l === r.v ? ' cur' : ''}" data-act="learn-lvl" data-k={S.id} data-f={r.f} data-l={l} title={n} aria-pressed={l === r.v}></button>{/each}</div><span class="ln">{LEVELS[r.v][0]}</span><button class="linkbtn" data-act="learn-field-del" data-k={S.id} data-f={r.f} aria-label="Remove {r.f}">✕</button></div>{/each}
-    <div class="bar"><input class="inp" placeholder="+ a field (press Enter)" data-learnfield={S.id} style="max-width:260px" onkeydown={add}></div></div>
-    <p class="hint lscale">The scale: {#each SCALE as [n, d], i}<b>{n}</b> {d.toLowerCase()}{i < SCALE.length - 1 ? " · " : "."}{/each}</p></section>
+<p class="label">Your level in each field</p><div class="lfields">{#each rows as r, i (i + r.f)}<div class="lfield{r.gap ? ' gap' : ''}"><span class="lf">{r.f}</span><div class="ldots" role="group" aria-label="{r.f} level">{#each LEVELS as [n], l}<button class="ld{l <= r.v && r.v ? ' on' : ''}{l === r.v ? ' cur' : ''}" data-act="learn-lvl" data-k={S.id} data-f={r.f} data-l={l} title={n} aria-pressed={l === r.v}></button>{/each}</div><span class="ln">{LEVELS[r.v][0]}</span><button class="linkbtn" data-act="learn-field-del" data-k={S.id} data-f={r.f} aria-label="Remove {r.f}">✕</button></div>{/each}
+    <input class="inp" placeholder="+ a field (press Enter)" data-learnfield={S.id} aria-label="Add a field" onkeydown={add}></div>

@@ -32,7 +32,7 @@ UniverList
 │   ├── Literature   ← books and comics
 │   ├── Film & TV    ← films and series; K, C and J-drama shelves appear once you have one
 │   ├── Games
-│   ├── Learning Centre ← your courses, each with its pathway, and curricula (official extension)
+│   ├── Learning Centre ← your courses: what to read, in what order, at what level (official extension)
 │   └── Music        ← albums
 ├── Watch & read     ← play and read your own files and servers (official extension)
 ├── Private          ← a separate, encrypted collection behind a passphrase
@@ -41,7 +41,7 @@ UniverList
                        Private collection · Extensions · Keybinds · Tags · Advanced
 \`\`\`
 
-Each mode starts with the core tabs (Overview, Library, Favourites, Stats, Lists, Insights) plus its own: This season (Culture), Series and Quotes (Literature), Diary (Film & TV), Playing (Games), Courses and Curricula (Learning Centre).
+Each mode starts with the core tabs (Overview, Library, Favourites, Stats, Lists, Insights) plus its own: This season (Culture), Series and Quotes (Literature), Diary (Film & TV), Playing (Games), Courses and Curricula (Learning Centre). Only the tabs that fit a mode are offered in it: This season where there's anime, Releasing (what's still coming out, and when) where there's TV or anime, and the Learning Centre shows its own tabs and the core ones only.
 
 - **⋯ at the end of the tabs** edits them for that mode: tick to add or remove, drag (or ↑ ↓) to reorder, and ★ the one it should open on. You can also drag tabs along the bar itself, or right-click one to hide it.
 - Each mode **remembers its tab**: leave Culture on Stats, visit Literature, come back, and it's still on Stats (unless you'd rather it always opens on its ★ tab: Settings › General).
@@ -147,12 +147,12 @@ UniverList [Watch | Read]                      ← the switch only shows on thes
  ▸ Continue watching
 \`\`\`
 
-1. Type to search (a plain list by default; tick **Covers** for art). Search looks up shows, anime and films in the catalogues (TVmaze, AniList, TMDB) for their seasons and episodes; it never looks for videos.
+1. Type to search (a plain list by default; tick **Covers** for art). Your own shows that match are listed the moment you type, marked as yours; then the catalogues (TVmaze, AniList, TMDB) join below as each answers. Search never looks for videos.
    What plays is always your own: files you open, your media servers, links on your own network (this computer, your home network, Tailscale), servers you've added, and YouTube. An address anywhere else is refused.
-2. Pick anything (a search result, something you're watching, a card's Watch button) and you land on its **player page**: the player, then a section called **Episodes**. If the next episode is on your servers or in a file or link you added, it starts playing; otherwise the player shows where to add it.
-3. **Seasons** are named by their release (Little Busters!, Little Busters! Refrain; Bungo Stray Dogs 1 to 5), including seasons you haven't added yet: AniList's sequel chain fills them in.
-4. **⋯** at the top right customises the page as blocks: put the description, seasons and episodes **under** the player or at the **side** (or off), in any order, and choose which buttons sit under the player and in what order, like a browser toolbar. The page is plain black by default (pick any theme instead under ⋯ or Settings › Appearance › Watch & read). The top shows just the show's name; every button sits under the player: previous and next, jump, subtitles, speed, picture-in-picture, full screen, cinema mode, lights and player settings. With nothing to play yet, the player stays empty with the ways to add a file.
-5. **⋯** customises the rest: Episodes as **Numbers** or **Detailed**, the show's description, the order of the sections, episodes beside or below the player, sequels together or separate, and the look. An anime's seasons are a dropdown of their full names; a TV show keeps its numbered seasons.
+2. Pick anything (a search result, something you're watching, a card's Watch button) and you land on its **player page**: the player, then **Episodes** (the seasons with their episodes) and the description under it. If the next episode is on your servers or in a file or link you added, it starts playing; otherwise the player shows where to add it. The page has an address of its own, so a refresh brings back the same episode, and **Back** (←, Escape or the browser's) goes straight back to your search as you left it.
+3. **Seasons** are named by their release (Little Busters!, Little Busters! Refrain; Bungo Stray Dogs 1 to 5), including seasons you haven't added yet: AniList's sequel chain fills them in. Episode names and descriptions come from the catalogues (AniList, TVmaze, MyAnimeList, TMDB).
+4. **At the top**: Back, the show's name (click it for its card), its **servers** (one button: the list of what plays this episode, and adding one for this series) and ⚙ for this page: episodes as **Numbers** or **Detailed**, each block under the player, on its right or its left, or off, and sequels together or separate. The page is plain black by default (pick any theme instead under Settings › Appearance › Watch & read).
+5. **On the player**, like a streaming site: play, next, volume and time on the left; the player's settings (⚙: speed, picture, playing on, the jumps), **CC** (which subtitles, their size, height and background), cinema mode and full screen on the right. Click the middle of the picture to play or pause; double-click either side to jump 15 seconds (on a phone, tap the big buttons). **Skip intro** shows only while an opening plays, where it's known (from the file's chapters, or AniSkip for anime). The bulb under the player turns the lights down around it.
 6. **W** opens Watch & read from anywhere, and pressing it again takes you back.
 7. Search shows one result per show: the anime and TV listings of the same series (One Piece on AniList and on TVmaze) are merged.
 8. In Read, picking something shows just that title: open its file or its chapters on your servers, nothing else.
@@ -162,12 +162,13 @@ UniverList [Watch | Read]                      ← the switch only shows on thes
 | Play / pause | Space or K |
 | Jump back / forward | ← → |
 | Volume | ↑ ↓ |
-| Cinema mode (hide the episode list) | T |
-| Lights off | L |
-| True full screen | F |
+| Cinema mode (the player as big as the window) | T |
+| Lights down | L |
+| Full screen (the player alone) | F |
 | Next / previous episode | N / P |
 | Skip intro | S |
 | Subtitles | C |
+| Back | Esc |
 
 **Servers**: Jellyfin, Emby, Plex, Komga, Kavita, Calibre-web, any OPDS catalogue, or a shared folder (yours or a friend's). Episodes and chapters are matched by name; if one copy won't play, the next is tried. **Upload files** plays or reads files from this computer without copying them anywhere.
 
@@ -177,9 +178,14 @@ UniverList [Watch | Read]                      ← the switch only shows on thes
 
 A mode like the others (after Games, with its own shortcut), switched on or off in **Settings › Extensions › Built in**. Switched off, your academic books show under Literature, and everything you made in it is kept. It starts empty: everything in it is yours.
 
-- **Courses**: what you're learning, a degree subject or any interest, kept apart as Academic and Interests. Each course is one page: its fields and your level in each (Foundations, Undergraduate, Master's, PhD, Research) with a goal, and its pathway. One subject is one course: maths stays maths, whatever level you're at.
-- **Its pathway**: a reading order that knows what each book needs first ("once Rudin is underway", "once part I of Artin is done"), and programmes with stages (years, terms) → modules (code, credits, core or option, status, mark, term) → topics to tick off → readings in order. See one as **Modules**, a **Map**, by **Stages** or by **Threads**. A programme adds up topics covered, credits done and a credit-weighted mark, and can be compared with another programme's topics.
-- **Curricula**: what different programmes teach in one course, topic by topic. Merged: every topic once, which programmes teach it (★ compulsory, ● offered) and every book they set, most-set first; click one to make it your book. Side by side: each programme's modules with their books. Add programmes by pasting a module list or fetching it from a university's page; make a pathway from your picks.
+- **A course** is a subject (mathematics) or a narrower topic (propulsion), for learning it in the best order. **New course**: type what you want to learn ("maths", "theoretical physics", "propulsion") and it's built at once from a catalogue of the standard books for each topic, by level (Foundations, Undergraduate, Master's, PhD), with which book needs which first, and of programmes that teach it (Cambridge, MIT, Imperial, TU Delft and others). Then each programme's own pages are fetched for their modules and reading lists, in the background.
+- **The current course**: pick it in the bar at the top of Courses and Curricula; **Make default** is the one the Learning Centre opens on.
+- **Next**: what to read now, in order: what you're reading, then what's ready (everything it needs is done or underway), lower levels first. **Start** puts it in your library and marks it underway; **Done** marks it read. Books below the level you say you're at are taken as known.
+- **The map**: topics down (by area), levels across; each book is a card coloured by where it's at (to read, reading, done). Hover or tap one for what it needs and unlocks; ⋈ marks a book that serves several topics, and "also in" one that's in another course too. On a phone it's a list by topic.
+- **Built from**: the programmes the course came from, how each fetch went, and **Fetch more** to add another subject's or topic's.
+- **Degree**: only if you tick "This is a degree I'm taking" (in the course's ⋯): its modules by year with credits, status and marks, and what it takes to graduate.
+- **Curricula**: the current course's programmes side by side: modules → the topics each teaches → its reading list, each book marked when it's already in your course. **Use this reading list** puts a module's books into the course, in its topic and at its level.
+- **Add to the Learning Centre from search**: a book found in Add can go straight into a course (its topic and level guessed), without a library entry first.
 - **Fetch from a link**: a programme page brings its modules in by year; a reading list (Talis Aspire, Leganto, or the module's own page) brings its books in order. You check and edit a table before anything is saved. If a page can't be fetched, paste its text instead.
 
 ---
@@ -261,7 +267,7 @@ profile-export_<name>_<date>.zip
 ├── library/<medium>.json     everything you've added
 ├── collections/              favourites, lists (tier lists too)
 ├── personal/                 profile, preferences, themes
-├── academic.json             the Learning Centre: every course, its pathway and opportunities
+├── academic.json             the Learning Centre: every course, its books and programmes
 ├── extensions/<id>/          public extensions
 ├── private/                  sealed: keys, private extensions, collection
 ├── images/<kind>/<id>        every picture, named after what it belongs to

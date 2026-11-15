@@ -42,6 +42,7 @@ import { isOwnNetwork, isOwnSource } from "../watch-read/own-sources";
 import { renderPlayer, srvRefresh, W } from "../watch-read/watch";
 import { ssHeldBy } from "../watch-read/series";
 import { srvApplyPref } from "../watch-read/player";
+import { firstPlayable } from "../watch-read/playable";
 import type { WatchPlayer, WatchSource } from "../core/model";
 
 /** a setting an extension asks for (Settings › Extensions shows it) */
@@ -583,6 +584,8 @@ export async function extAddSources(p: WatchPlayer | null) {
                         ext: id,
                         info: web(s.info) ? s.info : undefined,
                         subs: Array.isArray(s.subs) ? offered(s.subs).slice(0, 40).map(subtitle) : undefined,
+                        // what it is, so this browser starts on one it can play (watch-read/playable.ts)
+                        type: /^[\w.+-]+\/[\w.+-]+(;[^<>]{0,120})?$/.test(textOf(s.type)) ? textOf(s.type) : undefined,
                     }));
             } catch (_) {}
             if (W.player !== p) return;
@@ -590,7 +593,7 @@ export async function extAddSources(p: WatchPlayer | null) {
             const was = p.srcs.length;
             for (const s of L) if (!p.srcs.some(y => y.url === s.url)) p.srcs.push(s);
             if (!was && p.srcs.length) {
-                p.k = 0;
+                p.k = firstPlayable(p.srcs);
                 renderPlayer();
             } else if (!p.srcs.length && (p.looking || 0) <= 0) renderPlayer();
             else {

@@ -78,9 +78,8 @@ import { splitNames } from "../library/connect";
 import { bundleImages, restoreImages, txt, unzip } from "./importers";
 import type { ZipFiles } from "./importers";
 import { isV2, keysDecrypt, partsFromV2, v2Files } from "./export-zip";
-import { ACS, lcConvertOld } from "../learning-centre/learning";
-import { lcMergeCurricula } from "../learning-centre/learning-curricula";
-import { lcStripPersonal } from "../learning-centre/learning-hub";
+import { ACS } from "../learning-centre/learning";
+import { lcConvertOld, lcMerge, lcStripPersonal } from "../learning-centre/learning-data";
 import { extFromParts, extRestore, extRestoreSecrets, extSecrets } from "../extensions/extensions";
 import type { ExtRecord } from "../extensions/extensions";
 import { render } from "../core/navigation";
@@ -107,7 +106,7 @@ export const PARTS: [key: string, name: string, desc: string][] = [
     ["library", "Library", "Everything you've added, with scores, notes, dates and progress"],
     ["favourites", "Favourites & characters", "Favourites order, characters and people"],
     ["lists", "Lists", "Up next and every list, with notes"],
-    ["academic", "Learning Centre", "Your subjects and paths: stages, modules and reading lists"],
+    ["academic", "Learning Centre", "Your courses: their topics, books by level, programmes and reading lists"],
     [
         "preferences",
         "Preferences",
@@ -266,9 +265,11 @@ export const partCount = (k: string, x: unknown): number => {
           : k === "lists"
             ? n(v.lists) + 1
             : k === "academic"
-              ? v.v === 2
-                  ? n(v.paths) + n(v.subjects)
-                  : n(v.programmes) + n(v.paths) + Object.keys(fieldsOf(fieldsOf(v.learn).subjects)).length
+              ? v.v === 3
+                  ? n(v.courses)
+                  : v.v === 2
+                    ? n(v.subjects)
+                    : n(v.programmes) + n(v.paths) + Object.keys(fieldsOf(fieldsOf(v.learn).subjects)).length
               : k === "images" || k === "extensions"
                 ? n(x)
                 : k === "themes"
@@ -485,19 +486,11 @@ export async function applyParts(
             meta.lists = byId(meta.lists, lists);
         }
     }
-    // the Learning Centre's subjects and paths (an older export's programmes and pathways are turned into today's first)
+    // the Learning Centre's courses (an older export's are turned into today's first); merging keeps what either side
+    // added and what either side deleted stays deleted (learning-data.ts lcMerge)
     if (on("academic")) {
-        const a = lcConvertOld(parts.academic),
-            cur = ACS(),
-            add = <T extends { id: string }>(x: T[], y: T[]) => [...x, ...y.filter(p => !x.some(q => q.id === p.id))];
-        meta.courses = rep
-            ? { v: 2, subjects: a.subjects, paths: a.paths, curricula: a.curricula || {} }
-            : {
-                  v: 2,
-                  subjects: add(cur.subjects, a.subjects),
-                  paths: add(cur.paths, a.paths),
-                  curricula: lcMergeCurricula(cur.curricula || {}, a.curricula || {}),
-              };
+        const a = lcConvertOld(parts.academic);
+        meta.courses = rep ? a : lcMerge(ACS(), a);
     }
     if (on("themes")) {
         const themes: Record<string, Theme> = recordsIn(parts.themes);

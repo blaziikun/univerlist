@@ -4,7 +4,7 @@
 //
 //  It plays files you open, your own media servers (Jellyfin, Plex, a NAS or any folder you host, set up once for every
 //  episode) and links on your own network: only your own sources, by one rule (own-sources.ts).
-//  Details come from TVmaze, AniList and TMDB/Wikidata. It doesn't look for streams.
+//  Details come from TVmaze, AniList, MyAnimeList (Jikan) and TMDB/Wikidata (episodes.ts). It doesn't look for streams.
 // ─────────────────────────────────────────────────────────────────
 
 import {
@@ -18,7 +18,6 @@ import {
     fieldsOf,
     findExisting,
     fmtDate,
-    isRecord,
     items,
     ITEMS_VER,
     markDirty,
@@ -44,26 +43,40 @@ import {
     undo,
 } from "../core/core";
 import type { Titled } from "../core/core";
-import { AL, alEpisodes, pickShow, tvmazeByImdb, tvmazeEpisodes, tvmazeSearch } from "../sources/sources";
+import {
+    AL,
+    alEpisodes,
+    pickShow,
+    tmdbEpisodes,
+    tmdbSearch,
+    tvmazeByImdb,
+    tvmazeEpisodes,
+    tvmazeSearch,
+} from "../sources/sources";
+import { TMDB_ON } from "../sources/proxy";
+import { alNumbered, jikanFill, malOf, tvFill, unnamed } from "./episodes";
 import { partsOf } from "../core/parts";
 import { renderMain } from "../core/shell";
 import { closeModal } from "../core/modals";
 import { isOwnSource, NOT_OWN_SOURCE } from "./own-sources";
 import { savedLink, ssList, ssSources } from "./series";
 import { subChoose, subRefresh } from "./stream";
-import { cinFull, curAt, pcSeekBy, srvPreferred } from "./player";
-import { hlsStop } from "./player/video";
+import { cinFull, introSkip, panelsClose, pcSeekBy, srvPreferred } from "./player";
+import { videoRelease } from "./player/video";
+import { subToggle } from "./player/subtitles";
+import { firstPlayable } from "./playable";
+import { routeLeave, routePlayer } from "./route";
 import { frameOf } from "./player/view";
 import { stageChanged } from "./stage-state.svelte";
 import { stageOffNote, stageOn } from "../extensions/builtins";
 import { libMatchShow, LIBS } from "./medialibs";
-import { cinRefreshIfEmpty } from "./stage";
+import { cinRefreshIfEmpty, watchSearch } from "./stage";
 import { closeCtx } from "../core/keys";
 import { extAddSources } from "../extensions/extensions";
 import { render } from "../core/navigation";
 import { finishItem, logProgress } from "../library/item-actions";
 import { cleanCandidate } from "../core/actions";
-import type { Candidate, Entry, Episode, Item, WatchPlayer, WatchSeason, WatchShow, WatchSource } from "../core/model";
+import type { Candidate, Entry, Episode, WatchPlayer, WatchSeason, WatchShow, WatchSource } from "../core/model";
 
 /** the Watch page's state */
 export const W: {
@@ -84,6 +97,7 @@ export const W: {
     pageStale?: boolean; // the page behind the player changed, so it's drawn again when the player closes
     tv?: { key: string; eps: Episode[] } | null; // TVmaze's episodes of the open anime, lined up with AniList's
     vol?: { muted: boolean; last: number }; // volume and mute, carried from one video to the next
+    backY?: number; // how far down the search was when a show was opened from it (Back puts it there again)
 } = {
     view: "home",
     q: "",
@@ -103,10 +117,12 @@ export const W: {
 export type PlayerPrefs = {
     autoNext: boolean;
     speed: number;
-    skip: number;
-    seek: number;
-    fit: string;
-    subSize: number;
+    skip: number; // how far S jumps when nobody knows where the opening ends
+    seek: number; // how far the ⟲ ⟳ buttons, a double tap and ← → jump
+    fit: string; // the picture: "contain" (fit), "cover" (fill) or "fill" (stretch)
+    subSize: number; // %
+    subPos: number; // lines up from the bottom
+    subBg: number; // how dark the box behind subtitles is, %
     resume: boolean;
     hideUI: boolean;
     volume: number;
@@ -115,15 +131,17 @@ export type PlayerPrefs = {
     netBadge: boolean;
     layout?: string; // "docked" or "cinema"
     lights?: boolean;
-    controls?: string; // "custom" or "browser"
+    v?: number; // the version they were saved by (savedPlayer)
 };
 const PLAYER_DEF: PlayerPrefs = {
     autoNext: true,
     speed: 1,
     skip: 85,
-    seek: 10,
+    seek: 15,
     fit: "contain",
     subSize: 100,
+    subPos: 0,
+    subBg: 55,
     resume: true,
     hideUI: true,
     volume: 1,
@@ -131,13 +149,17 @@ const PLAYER_DEF: PlayerPrefs = {
     subLang: "en",
     netBadge: true,
 };
+// Settings saved before version 2 held every default as it was then (the whole set was written back on each change),
+// so a default that changed since (the picture's fit, how far a jump goes) was stuck: those two are let go once.
+const PLAYER_V = 2;
+const STALE_DEFAULTS = ["fit", "seek"];
 // a saved choice of the kind its default is, or the default (settings come from storage and backups)
 const boolOr = (x: unknown, d: boolean) => (typeof x === "boolean" ? x : d);
 const strOr = (x: unknown, d: string) => (typeof x === "string" ? x : d);
 const optBool = (x: unknown) => (typeof x === "boolean" ? x : undefined);
 const optStr = (x: unknown) => (typeof x === "string" ? x : undefined);
 export const PS = (): PlayerPrefs => {
-    const s = fieldsOf(meta.settings.player),
+    const s = savedPlayer(),
         d = PLAYER_DEF;
     return {
         autoNext: boolOr(s.autoNext, d.autoNext),
@@ -146,6 +168,8 @@ export const PS = (): PlayerPrefs => {
         seek: numOf(s.seek) ?? d.seek,
         fit: strOr(s.fit, d.fit),
         subSize: numOf(s.subSize) ?? d.subSize,
+        subPos: numOf(s.subPos) ?? d.subPos,
+        subBg: numOf(s.subBg) ?? d.subBg,
         resume: boolOr(s.resume, d.resume),
         hideUI: boolOr(s.hideUI, d.hideUI),
         volume: numOf(s.volume) ?? d.volume,
@@ -154,9 +178,20 @@ export const PS = (): PlayerPrefs => {
         netBadge: boolOr(s.netBadge, d.netBadge),
         layout: optStr(s.layout),
         lights: optBool(s.lights),
-        controls: optStr(s.controls),
+        v: PLAYER_V,
     };
 };
+// what's saved, with the stale defaults of an older version left out
+function savedPlayer(): Record<string, unknown> {
+    const s = { ...fieldsOf(meta.settings.player) };
+    if (s.v !== PLAYER_V) for (const k of STALE_DEFAULTS) delete s[k];
+    return s;
+}
+/** some of the player's settings changed: only what you changed is kept, so a better default reaches you later */
+export function playerSave(change: Partial<PlayerPrefs>) {
+    meta.settings.player = { ...savedPlayer(), ...change, v: PLAYER_V };
+    markDirty();
+}
 /** your media servers' link patterns that are on */
 export const servers = () => (meta.settings.servers || []).filter(s => s.on !== false && s.pattern);
 /** [season, episode] from a file's name (season 0: it doesn't say), or null */
@@ -186,7 +221,7 @@ export const savePos = (k: string, t: number) => {
     } catch (_) {}
 };
 // a show you put together under one name (meta.watchGroups)
-const groupName = (gid: string | undefined) => (gid ? meta.watchGroups?.[gid]?.name : undefined);
+export const groupName = (gid: string | undefined) => (gid ? meta.watchGroups?.[gid]?.name : undefined);
 const NOT_SEASONS = new Set(["Movie", "Special", "Music"]);
 // anime split into separate AniList entries (Bungo Stray Dogs 1, 2, 3…) become one show with seasons: the sequel chain in your library
 export function animeChain(id: string): Entry[] {
@@ -358,97 +393,54 @@ export function epHasSource(si: number, e: number): boolean {
         ssList().length
     );
 }
-/** how the show page and the player look: blocks beside or under the player, and the buttons on and under the video */
+/** how the player's page is laid out: the blocks (the seasons with their episodes, and the description), each under
+ *  the player, beside it on the right or the left, or off; and the episodes as numbers or as detailed rows */
 export interface WatchPage {
+    v?: number;
     eps: string; // the episode list: "numbers" or "detailed"
-    thumbs: boolean;
-    desc: boolean;
-    about: boolean;
+    thumbs: boolean; // detailed rows: pictures
+    desc: boolean; // …and the episodes' descriptions
     order: string[]; // the blocks, in order
-    place: Record<string, string>; // each block: "side", "main" (under) or "off"
-    tools: string[]; // the player's buttons, in order
-    off: string[]; // …the ones hidden
-    spot?: Record<string, string>; // …and where each one sits: "video" or "under"
-    look?: Record<string, number>; // the player's size, corners, shade… (player.ts LOOK)
+    place: Record<string, string>; // each block: "main" (under), "side" (right), "left" or "off"
 }
-// thumbnails and episode descriptions are off unless you want them; sections in the order you choose
+/** where a block can go */
+export const WP_PLACES = ["main", "side", "left", "off"];
+// under the player, the seasons with their episodes first and then the description, as a streaming site lays it out
 const WP_DEF = {
     eps: "numbers",
     thumbs: true,
     desc: true,
-    about: true,
-    order: ["about", "seasons", "eps"],
-    place: { about: "side", seasons: "side", eps: "side" },
+    order: ["eps", "about"],
+    place: { eps: "main", about: "main" },
 };
-export const WP_NAMES: Record<string, string> = { about: "Description", seasons: "Seasons", eps: "Episodes" };
-/** every button the bar under the player can hold, in its default order */
-export const TOOLS: [key: string, name: string][] = [
-    ["play", "Play / pause"],
-    ["prev", "Previous episode"],
-    ["back", "Jump back"],
-    ["fwd", "Jump forward"],
-    ["skip", "Skip intro"],
-    ["time", "Time"],
-    ["vol", "Volume"],
-    ["ep", "Which episode"],
-    ["gap", "Space"],
-    ["src", "Source"],
-    ["subs", "Subtitles"],
-    ["speed", "Speed"],
-    ["pip", "Picture in picture"],
-    ["full", "Full screen"],
-    ["cinema", "Cinema mode"],
-    ["lights", "Lights"],
-    ["settings", "Player settings"],
-    ["mark", "Watched"],
-    ["next", "Next episode"],
-];
-/** a button's name, for the lists that move them around */
-export const toolName = (k: string) => TOOLS.find(t => t[0] === k)?.[1];
-// a saved table of strings (or numbers), keeping only the entries that are
-const strTable = (x: unknown): Record<string, string> =>
-    Object.fromEntries(Object.entries(fieldsOf(x)).filter((e): e is [string, string] => typeof e[1] === "string"));
-const numTable = (x: unknown): Record<string, number> =>
-    Object.fromEntries(
-        Object.entries(fieldsOf(x)).flatMap(([k, v]): [string, number][] => {
-            const n = numOf(v);
-            return n === undefined ? [] : [[k, n]];
-        })
-    );
+export const WP_NAMES: Record<string, string> = { eps: "Seasons & episodes", about: "Description" };
+// The page was laid out differently before version 2 (seasons and episodes were two blocks, the buttons could be
+// moved anywhere): only the choice of numbers or detailed rows carries over, everything else starts from the defaults
+const WP_V = 2;
 export const WP = (): WatchPage => {
-    const s = fieldsOf(meta.settings.watchPage);
-    const order = [...new Set([...strsOf(s.order).filter(k => WP_DEF.order.includes(k)), ...WP_DEF.order])];
-    const place = {
-        ...WP_DEF.place,
-        ...(s.where === "below" ? { about: "main", seasons: "main", eps: "main" } : {}), // the older choice, for all three
-        ...strTable(s.place),
-    };
-    // your order, with any button added since slotted in where it belongs by default (not piled at the end)
-    const mine = [...new Set(strsOf(s.tools).filter(k => TOOLS.some(t => t[0] === k)))],
-        all = TOOLS.map(t => t[0]);
-    for (const k of all)
-        if (!mine.includes(k)) {
-            const prev = all
-                .slice(0, all.indexOf(k))
-                .reverse()
-                .find(x => mine.includes(x));
-            mine.splice(prev ? mine.indexOf(prev) + 1 : 0, 0, k);
+    const s = fieldsOf(meta.settings.watchPage),
+        now = s.v === WP_V,
+        saved = fieldsOf(s.place);
+    const order = now
+        ? [...new Set([...strsOf(s.order).filter(k => WP_DEF.order.includes(k)), ...WP_DEF.order])]
+        : [...WP_DEF.order];
+    const place: Record<string, string> = { ...WP_DEF.place };
+    if (now)
+        for (const k of WP_DEF.order) {
+            const v = saved[k];
+            if (typeof v === "string" && WP_PLACES.includes(v)) place[k] = v;
         }
     return {
-        eps: strOr(s.eps, WP_DEF.eps),
+        v: WP_V,
+        eps: s.eps === "detailed" ? "detailed" : WP_DEF.eps,
         thumbs: boolOr(s.thumbs, WP_DEF.thumbs),
         desc: boolOr(s.desc, WP_DEF.desc),
-        about: boolOr(s.about, WP_DEF.about),
         order,
         place,
-        tools: mine,
-        off: strsOf(s.off),
-        spot: isRecord(s.spot) ? strTable(s.spot) : undefined,
-        look: isRecord(s.look) ? numTable(s.look) : undefined,
     };
 };
 export const wpSave = (p: WatchPage) => {
-    meta.settings.watchPage = p;
+    meta.settings.watchPage = { ...p, v: WP_V };
     markDirty();
 };
 /** the show open on the Watch page (page/ShowPage.svelte): its header, its seasons, and the season's episodes with
@@ -473,7 +465,7 @@ export function showView() {
             .filter(Boolean)
             .join(" · "),
         name: grouped ? groupName(s.groupId) || s.title : s.title,
-        about: !grouped && s.about && wp.about ? s.about.slice(0, 420) : "",
+        about: !grouped && s.about && wp.place.about !== "off" ? s.about.slice(0, 420) : "",
         entry: b ? { id: b.id, pill: "pill " + b.status, word: statusWord(b.status, s.medium) } : null,
         servers: "Servers" + (nss ? " · " + nss : ""),
         // what your servers said: "● On Living room (6 episodes) ", or what went wrong, and a way to pick by hand
@@ -541,117 +533,48 @@ export async function loadWatchSeason(si: number) {
     const b = S.member ? items.get(S.member) : undefined,
         ext: Record<string, unknown> = (b && b.ext) || S.ext || {};
     let n = (b && b.total) || S.total || 0,
-        thumbs: { title: string; thumbnail: string }[] = [];
+        listed: { title: string; thumbnail: string }[] = [],
+        mal = malOf(S);
     const alId = Number(ext.anilist) || 0;
     if (alId) {
         try {
             const d = await alEpisodes(alId);
             n = d.total || n;
-            thumbs = d.eps || [];
+            listed = d.eps || [];
+            mal = mal || d.mal || 0;
         } catch (_) {}
     }
-    const numIn = (t: string) => parseInt((/(\d+)/.exec(t) || [])[1], 10);
-    const nums = thumbs.map(t => numIn(t.title)).filter(n => n > 0),
-        off =
-            nums.length && Math.min(...nums) > 1 && Math.max(...nums) - Math.min(...nums) < (n || 999)
-                ? Math.min(...nums) - 1
-                : 0;
-    const byNum = new Map(thumbs.map(t => [numIn(t.title) - off, t]));
-    S.eps = Array.from({ length: Math.min(3000, n || thumbs.length || 12) }, (_, i) => {
-        const t = byNum.get(i + 1);
-        return {
-            e: i + 1,
-            title: t ? t.title.replace(/^Episode \d+\s*[-:–]\s*/i, "") : "",
-            image: t ? t.thumbnail : "",
-        };
-    });
-    if (W.show && W.show.medium === "anime") await tvFill(si);
+    S.eps = alNumbered(listed, n);
+    const anime = W.show?.medium === "anime";
+    if (anime) await tvFill(si);
     S.loading = false;
     if (ui.page === "watch") renderMain();
     cinSideRedraw();
-}
-// anime: AniList has the episode count, TVmaze has titles, pictures and descriptions for most shows. Line them up by
-// position across the whole series (season 2 of an anime is TVmaze's episodes 13 onwards when season 1 had 12)
-async function tvFill(si: number) {
-    const S = W.seasons[si],
-        sh = W.show;
-    if (!S || !S.eps || !sh) return;
-    try {
-        if (!W.tv || W.tv.key !== (sh.groupId || sh.id || sh.title)) {
-            const key = sh.groupId || sh.id || sh.title,
-                m0 = W.seasons[0] && W.seasons[0].member,
-                first = m0 ? items.get(m0) : undefined,
-                base: Item | WatchShow = first || sh;
-            let id = idOf(base.ext?.tvmaze) || idOf(sh.ext?.tvmaze);
-            if (!id) {
-                const names = [
-                    ...new Set(
-                        [
-                            sh.groupId ? groupName(sh.groupId) : "",
-                            base.alt && base.alt.en,
-                            cleanTitle(base.title),
-                            cleanTitle(sh.title),
-                        ].filter((t): t is string => !!t)
-                    ),
-                ];
-                for (const q of names) {
-                    const R = (await tvmazeSearch(q).catch(() => [])).filter(
-                        r =>
-                            /anime|animation/i.test((r.genres || []).join(" ") + " " + (r.kind || "")) ||
-                            r.medium === "anime" ||
-                            r.lang === "Japanese"
-                    );
-                    const r = pickShow(R.length ? R : await tvmazeSearch(q).catch(() => []), {
-                        title: q,
-                        year: base.year,
-                    });
-                    if (r) {
-                        id = r.ext.tvmaze;
-                        break;
-                    }
-                }
-            }
-            W.tv = {
-                key,
-                eps: id
-                    ? (await tvmazeEpisodes(id))
-                          .filter(e => e.e != null && e.s > 0)
-                          .sort((a, b) => a.s - b.s || a.e - b.e)
-                    : [],
-            };
-        }
-        const T = W.tv.eps;
-        if (!T.length) return;
-        // where this season starts in TVmaze's list
-        let off = 0;
-        for (let i = 0; i < si; i++) {
-            const P = W.seasons[i];
-            off += (P.eps && P.eps.length) || P.total || (P.member && items.get(P.member)?.total) || 0;
-        }
-        if (W.seasons.length === 1) off = 0;
-        S.eps.forEach((e, i) => {
-            const t = T[off + i];
-            if (!t) return;
-            if (!e.title || /^Episode \d+$/i.test(e.title)) e.title = t.title || e.title;
-            if (!e.image) e.image = t.image;
-            if (!e.about) e.about = t.about;
-            if (!e.date) e.date = t.date;
-            if (!e.runtime) e.runtime = t.runtime;
+    // the names still missing, from MyAnimeList: in the background, as there can be several pages of them
+    if (anime && mal && S.eps.some(e => unnamed(e.title)))
+        jikanFill(S, mal).then(named => {
+            if (!named || !W.seasons.includes(S)) return;
+            if (ui.page === "watch") renderMain();
+            cinSideRedraw();
         });
-    } catch (_) {}
 }
-/** opens a show (an entry of yours, or what a search found) on the Watch page, and its player unless told not to */
-export async function watchOpen(show: WatchShow, opts = { play: true }) {
+/** where to start, when it isn't where you left off: a season (of W.seasons) and an episode (null: a film) */
+type StartAt = { si: number; e: number | null };
+/** opens a show (an entry of yours, or what a search found) on the Watch page, and its player unless told not to; at
+ *  a season and episode when it's given one (the player's address after a refresh) */
+export async function watchOpen(show: WatchShow, opts: { play: boolean; at?: StartAt } = { play: true }) {
     const lib =
         show.id && items.has(show.id) ? show.id : findExisting(show.title, show.creator || "", show.medium, show.ext);
     const sh: WatchShow = { ...show, id: lib || null };
     W.show = sh;
     // another show opened while this one was still being looked up: what arrives for this one is left out
     const left = () => W.show !== sh;
+    // where the search was, for Back (opening one show from another's player keeps the first place)
+    if (!W.player) W.backY = window.scrollY;
     W.view = "show";
     W.seasons = [];
     W.si = 0;
-    window.scrollTo(0, 0);
+    window.scrollTo({ top: 0, behavior: "instant" });
     W.lib = new Map();
     W.libImg = new Map();
     W.libNote = "";
@@ -676,7 +599,7 @@ export async function watchOpen(show: WatchShow, opts = { play: true }) {
         W.seasons = [{ n: 1, label: "Film", member: lib, eps: [{ e: 1, title: show.title, runtime: show.runtime }] }];
         renderMain();
         await libMatchShow();
-        if (opts.play && !left()) watchAutoPlay();
+        if (opts.play && !left()) watchAutoPlay(opts.at);
         return;
     }
     if (show.medium === "anime") {
@@ -717,7 +640,7 @@ export async function watchOpen(show: WatchShow, opts = { play: true }) {
         await Promise.all([loadWatchSeason(W.si), alMoreSeasons(sh)]);
         if (left()) return;
         await libMatchShow();
-        if (opts.play && !left()) watchAutoPlay();
+        if (opts.play && !left()) watchAutoPlay(opts.at);
         return;
     }
     W.busy = true;
@@ -730,11 +653,23 @@ export async function watchOpen(show: WatchShow, opts = { play: true }) {
             id = t ? t.ext.tvmaze : undefined;
         }
         if (!id) {
-            const r = (await tvmazeSearch(cleanTitle(show.title)))[0];
+            const r = pickShow(await tvmazeSearch(cleanTitle(show.title)).catch(() => []), {
+                title: show.title,
+                year: show.year,
+            });
             id = r ? r.ext.tvmaze : undefined;
         }
-        if (id) {
-            const eps = await tvmazeEpisodes(id);
+        // TVmaze doesn't know it: TMDB's seasons, when TMDB is set up (the site lends it)
+        let tmdbId = !id && TMDB_ON() ? numOf(show.ext?.tmdb) : undefined;
+        if (!id && TMDB_ON() && !tmdbId) {
+            const r = pickShow(await tmdbSearch(cleanTitle(show.title), "tv").catch(() => []), {
+                title: show.title,
+                year: show.year,
+            });
+            tmdbId = numOf(r?.ext?.tmdb);
+        }
+        if (id || tmdbId) {
+            const eps = id ? await tvmazeEpisodes(id) : tmdbId ? await tmdbEpisodes(tmdbId) : [];
             if (left()) return void (W.busy = false);
             const by = new Map<number, Episode[]>(),
                 seenE = new Set<string>();
@@ -759,7 +694,7 @@ export async function watchOpen(show: WatchShow, opts = { play: true }) {
     W.busy = false;
     if (ui.page === "watch") renderMain();
     await libMatchShow();
-    if (opts.play && !left()) watchAutoPlay();
+    if (opts.play && !left()) watchAutoPlay(opts.at);
 }
 /** a season AniList knows: what alMoreSeasons asks for */
 interface AlSeason {
@@ -881,8 +816,16 @@ async function alMoreSeasons(sh: WatchShow) {
     cinSideRedraw();
 }
 // opening something lands on its player page: the next episode cued, playing straight away if it's on your servers or in a file you added
-async function watchAutoPlay() {
+async function watchAutoPlay(at?: StartAt) {
     if (ui.page !== "watch" || !W.show) return;
+    // a place asked for (the address after a refresh): that season and episode, if the show has them
+    if (at && W.seasons[at.si]) {
+        W.si = at.si;
+        await loadWatchSeason(at.si);
+        if (W.show.medium === "film" || at.e == null) return watchStart(W.si, 1, { empty: true });
+        if (!W.seasons[at.si].eps?.length || W.seasons[at.si].eps?.some(x => x.e === at.e))
+            return watchStart(W.si, at.e, { empty: true });
+    }
     // the first season you haven't finished
     const film = W.show.medium === "film",
         done = (i: number) => {
@@ -1029,14 +972,16 @@ export function watchStart(si: number, e: number, o: { empty?: boolean } = {}) {
         si,
         e,
         srcs: L,
-        k: 0,
+        k: firstPlayable(L),
         marked: epWatched(si, e),
+        listSi: si,
     };
     {
         const pi = srvPreferred(W.player);
         if (pi > 0) W.player.k = pi;
     }
     renderPlayer();
+    routePlayer();
     extAddSources(W.player);
 }
 // the player's component, as main.ts hands it over (watch-read/surfaces.ts): this module doesn't import it, as it imports this
@@ -1050,15 +995,14 @@ export function useSveltePlayer(ui: { show: () => void; hide: () => void }) {
 export function renderPlayer() {
     const p = W.player,
         old = $<HTMLVideoElement>("#cinema video");
-    if (old) hlsStop(old);
     if (!p) {
         if (old) {
             if (W.lastKey) savePos(W.lastKey, old.currentTime);
-            old.pause();
-            old.removeAttribute("src");
-            old.load();
+            videoRelease(old);
         }
         playerUI?.hide();
+        // the player's step in the history goes with it (a refresh mustn't open it again)
+        routeLeave();
         document.body.classList.remove("cinema-on");
         if (W.pageStale && ui.page === "watch") renderMain();
         return;
@@ -1067,6 +1011,9 @@ export function renderPlayer() {
         W.vol = W.vol || { muted: false, last: 0.6 };
         W.vol.muted = old.muted;
         if (old.volume > 0.02) W.vol.last = old.volume;
+        // the outgoing video stops here and lets go of its stream, so it can't go on playing (or start, when it was
+        // still loading) under the next one
+        videoRelease(old);
     } // what you set on the outgoing video carries to the next
     document.body.classList.add("cinema-on");
     const src: WatchSource = p.srcs[p.k] || {};
@@ -1082,6 +1029,7 @@ export function renderPlayer() {
         p.subPick = undefined;
     }
     p.frame = frameOf(p);
+    p.intro = null;
     // the news first, so a player drawn for the first time starts with this video, not one it replaces at once
     stageChanged("video", "player", "side", "srv", "subs", "mark", "look");
     playerUI?.show();
@@ -1089,19 +1037,10 @@ export function renderPlayer() {
 /** the player draws again around the same video (a panel opened, a button moved, the page rearranged): what's
  *  playing carries on where it is */
 export function playerRedraw() {
-    const p = W.player;
-    if (!p) return;
-    // whose controls changed since this video was drawn (player settings › Controls): a new one with them, from where
-    // you are, as drawing the player again always brought them
-    const f = frameOf(p);
-    if (p.frame && (f.custom !== p.frame.custom || f.controls !== p.frame.controls)) {
-        if ($("#cinema video")) p.keepAt = curAt();
-        renderPlayer();
-        return;
-    }
+    if (!W.player) return;
     stageChanged("player", "side", "srv", "subs", "mark", "look");
 }
-/** the blocks beside and under the player, and "Customise this page", draw again */
+/** the blocks beside and under the player, and this page's settings, draw again */
 export function cinSideRedraw() {
     if (W.player) stageChanged("side");
 }
@@ -1120,7 +1059,7 @@ export const srvDesc = (x: WatchSource) =>
     ]
         .filter(Boolean)
         .join(" · ");
-/** the player's server strip draws again, if that player is still the one open (a server arriving late mustn't
+/** the player's server button and list draw again, if that player is still the one open (a server arriving late mustn't
  *  restart what's playing) */
 export function srvRefresh(p: WatchPlayer) {
     if (W.player === p) stageChanged("srv");
@@ -1229,57 +1168,73 @@ export function cinSeasonPick(i: number) {
 }
 /** player › Speed: kept, and the video plays at it now */
 export function speedSet(x: number) {
-    meta.settings.player = { ...PS(), speed: x };
-    markDirty();
+    playerSave({ speed: x });
     const v = $<HTMLVideoElement>("#cinema video");
     if (v) v.playbackRate = x;
+    stageChanged("player");
 }
 /** player › Subtitles: the track picked (or off), remembered as your language */
 export function subPicked(url: string) {
     const v = $<HTMLVideoElement>("#cinema video");
     if (v && W.player) subChoose(W.player, v, url, true);
 }
-/** one of the player's settings changed (PlayerOpts.svelte): kept; the picture's fit and the subtitles' size show at
- *  once, the rest the next time the player is drawn, as before */
-export function playerSet(k: string, v: string | number | boolean) {
-    meta.settings.player = { ...PS(), [k]: v };
-    markDirty();
-    if (k === "fit" || k === "subSize") stageChanged("look");
+/** one of the player's settings changed (PlayerOpts.svelte, SubsPanel.svelte): kept; the picture and the subtitles'
+ *  look show at once, the rest the next time a video starts */
+export function playerSet(k: keyof PlayerPrefs, v: string | number | boolean) {
+    playerSave({ [k]: v });
+    stageChanged("look", "player");
 }
-/** player › ▭: cinema mode (the video fills the window, the buttons over it) or docked beside the episodes; a new
- *  layout draws a new <video> from where you are */
+/** player › ▭: cinema mode (the video as big as the window, the episodes below) or the page around it. Only the
+ *  layout changes: the same video goes on playing, never loaded again */
 export function cinLayout() {
-    if (W.player && $("#cinema video")) W.player.keepAt = curAt();
-    meta.settings.player = { ...PS(), layout: (PS().layout || "docked") === "docked" ? "cinema" : "docked" };
-    markDirty();
-    renderPlayer();
+    playerSave({ layout: (PS().layout || "docked") === "docked" ? "cinema" : "docked" });
+    stageChanged("player", "side", "look");
 }
-/** player › ☾: the lights down around the video, or up */
-export function cinLights() {
-    meta.settings.player = { ...PS(), lights: !PS().lights };
-    markDirty();
-    stageChanged("mark");
+/** the bulb under the player: everything but the video goes dark, or light again */
+export function cinLights(on = !PS().lights) {
+    playerSave({ lights: on });
+    stageChanged("mark", "look");
 }
-/** closes the player, keeping your place: one level up, the show (or Watch's home) */
+/** closes the player, keeping your place */
 export function cinClose() {
     const v = $<HTMLVideoElement>("#cinema video");
     if (v && W.lastKey && W.player) savePos(W.lastKey, (W.player.offset || 0) + v.currentTime);
     W.player = null;
     renderPlayer();
-    W.view = W.show ? "show" : "home";
+    W.view = "home";
     ui.wpOpts = false;
+}
+/** Back from the player (its ←, Escape, or the browser's Back): straight to where you came from, the search as it was
+ *  (what you typed, what it found, how far down you were) */
+export function watchBack() {
+    const y = W.backY || 0;
+    cinClose();
+    if (ui.page !== "watch") return;
+    renderMain();
+    // at once, not scrolling there smoothly: it's where you were, not somewhere to go
+    requestAnimationFrame(() => window.scrollTo({ top: y, behavior: "instant" }));
+    // opened after a refresh: what was typed comes back, and is looked for again
+    if (W.q && !W.results) watchSearch(W.q);
 }
 /** the player's keys (player/Cinema.svelte listens): space or K, ← →, ↑ ↓, F, T, L, M, N, P, S, C, Escape. True when
  *  the key was one of these */
 export function playerKey(e: KeyboardEvent): boolean {
     if (!W.player || ui.modal || /INPUT|TEXTAREA|SELECT/.test(document.activeElement?.tagName ?? "")) return false;
-    const v = $<HTMLVideoElement>("#cinema video"),
+    const p = W.player,
+        v = $<HTMLVideoElement>("#cinema video"),
         o = PS(),
         k = e.key.toLowerCase();
     if (e.key === "Escape") {
-        cinClose();
-        renderMain();
-    } // one level up: the show
+        // a panel that's open closes first; then Back, one level up
+        if (p.opts || p.cc || p.srcOpen || ui.wpOpts) panelsClose();
+        else watchBack();
+        return true;
+    }
+    if (k === "t") cinLayout();
+    else if (k === "l") cinLights();
+    else if (k === "f") cinFull();
+    else if (k === "n") watchStep(1);
+    else if (k === "p") watchStep(-1);
     else if (!v) return false;
     else if (k === " " || k === "k") {
         if (v.paused) v.play().catch(() => {});
@@ -1290,26 +1245,17 @@ export function playerKey(e: KeyboardEvent): boolean {
         v.muted = false;
         v.volume = Math.min(1, v.volume + 0.1);
     } else if (e.key === "ArrowDown") v.volume = Math.max(0, v.volume - 0.1);
-    else if (k === "f") cinFull();
-    else if (k === "t") cinLayout();
-    else if (k === "l") cinLights();
     else if (k === "m") v.muted = !v.muted;
-    else if (k === "n") watchStep(1);
-    else if (k === "p") watchStep(-1);
-    else if (k === "s" && o.skip) pcSeekBy(o.skip);
+    else if (k === "s") introSkip();
     else if (k === "c") {
-        const p = W.player,
-            L = p.subList || [];
+        const L = p.subList || [];
         if (L.length) {
             const on = p.subPick,
                 back = p.subLast || (L.find(s => (s.lang || "") === PS().subLang) || L[0]).url;
             if (on) p.subLast = on;
             subChoose(p, v, on ? "" : back, false);
             subRefresh(p);
-        } else {
-            const t = v.textTracks[0];
-            if (t) t.mode = t.mode === "showing" ? "hidden" : "showing";
-        }
+        } else subToggle(v);
     } else return false;
     return true;
 }

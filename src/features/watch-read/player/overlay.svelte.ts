@@ -1,7 +1,7 @@
 // src/features/watch-read/player/overlay.svelte.ts
 // ─────────────────────────────────────────────────────────────────
 //  What's drawn over the video while it plays: how much of a stream has arrived, waiting so it won't stop,
-//  "Resumed at 12:34 · Start over", "Up next", and "None of the servers could play this here"
+//  "Resumed at 12:34 · Start over", "Up next", Skip intro, and "None of the servers could play this here"
 //
 //  Each <video> gets its own (player/CinStage.svelte makes one beside it), so a new episode or server starts clean, as
 //  the HTML player did when it drew a new video. The code that watches the video (video.ts, stream.ts) changes it as
@@ -28,6 +28,8 @@ export class Overlay {
     next = $state<{ label: string; n: number } | null>(null);
     /** none of the servers could play it */
     err = $state(false);
+    /** an opening is playing: Skip intro shows */
+    skip = $state(false);
 }
 
 // the overlay of the video playing now, for the buttons on it (Start over, Play now, Cancel: handlers.ts)

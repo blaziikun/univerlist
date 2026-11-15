@@ -152,46 +152,77 @@ import type { Item } from "../../src/features/core/model";
     v = await vid();
     ok("↑ also unmutes", v!.muted === false);
 
-    // ---- the buttons under the player ----
-    const click = (act: string) => p.click(`#cinema [data-act="${act}"]`);
+    // ---- the controls and the panels ----
+    // the controls show while the pointer moves over the player
+    const wake = () => p.mouse.move(500 + Math.random() * 40, 300);
+    const click = async (act: string) => {
+        await wake();
+        await p.click(`#cinema [data-act="${act}"]`);
+    };
     await ev(() => {
-        document.querySelector<HTMLVideoElement>("#cinema video")!.currentTime = 2;
+        const v = document.querySelector<HTMLVideoElement>("#cinema video")!;
+        v.pause();
+        v.currentTime = 1.5;
     });
     await p.waitForTimeout(200);
     let t0 = (await vid())!.t;
     await click("cin-back");
     await p.waitForTimeout(200);
     let t1 = (await vid())!.t;
-    ok("back jumps back", t1 < t0 - 0.5, `${t0} → ${t1}`);
+    ok("⟲ jumps back", t1 < t0 - 0.5, `${t0} → ${t1}`);
     t0 = t1;
     await click("cin-fwd");
     await p.waitForTimeout(200);
     t1 = (await vid())!.t;
-    ok("forward jumps ahead", t1 > t0 + 0.5, `${t0} → ${t1}`);
+    ok("⟳ jumps ahead", t1 > t0 + 0.5, `${t0} → ${t1}`);
     t0 = t1;
-    await click("cin-skip");
+    await p.keyboard.press("s");
     await p.waitForTimeout(200);
     t1 = (await vid())!.t;
-    ok("skip intro jumps ahead", t1 > t0 + 0.5, `${t0} → ${t1}`);
-    await p.selectOption("#cin-speed", "1.5");
-    await p.waitForTimeout(100);
-    ok("speed changes", (await vid())!.rate === 1.5);
-    await click("cin-lights");
-    ok("lights button toggles", await ev(() => document.querySelector("#cinema")!.classList.contains("lights")));
-    await click("cin-lights");
-    ok("…and back", await ev(() => !document.querySelector("#cinema")!.classList.contains("lights")));
-    const lay0 = await ev(() => /lay-docked/.test(document.querySelector("#cinema")!.className));
-    await click("cin-lay");
-    await ready();
+    ok("S jumps ahead by your setting when nobody marked the opening", t1 > t0 + 0.5, `${t0} → ${t1}`);
     ok(
-        "cinema mode button switches layout",
-        (await ev(() => /lay-docked/.test(document.querySelector("#cinema")!.className))) !== lay0
+        "…and there's no Skip intro button without a marked opening",
+        await ev(() => !document.querySelector("#cinema .pc-skipintro"))
+    );
+    await click("cin-opts");
+    await p.click('#cinema .cin-opts [data-po="speed"] >> text=1.5×');
+    await p.waitForTimeout(100);
+    ok("speed changes (player settings)", (await vid())!.rate === 1.5);
+    await click("cin-opts");
+    await click("cin-lights");
+    ok(
+        "the bulb turns the lights down",
+        await ev(() => document.querySelector("#cinema")!.classList.contains("lights"))
+    );
+    await p.mouse.click(30, 880);
+    ok(
+        "…and a click on the dark turns them up again",
+        await ev(() => !document.querySelector("#cinema")!.classList.contains("lights"))
+    );
+    const video0 = await ev(() => {
+        window.__kept = new WeakSet([document.querySelector("#cinema video")!]);
+        return document.querySelector<HTMLVideoElement>("#cinema video")!.src;
+    });
+    const cin0 = await ev(() => document.querySelector("#cinema")!.classList.contains("cinema"));
+    await click("cin-lay");
+    ok(
+        "cinema mode switches the layout",
+        (await ev(() => document.querySelector("#cinema")!.classList.contains("cinema"))) !== cin0
+    );
+    ok(
+        "…with the same video, never loaded again",
+        await ev(
+            s =>
+                window.__kept.has(document.querySelector("#cinema video")!) &&
+                document.querySelector<HTMLVideoElement>("#cinema video")!.src === s,
+            video0
+        )
     );
     await p.keyboard.press("t");
-    await ready();
     ok(
-        "T switches it back",
-        (await ev(() => /lay-docked/.test(document.querySelector("#cinema")!.className))) === lay0
+        "T switches it back, the same video still",
+        (await ev(() => document.querySelector("#cinema")!.classList.contains("cinema"))) === cin0 &&
+            (await ev(() => window.__kept.has(document.querySelector("#cinema video")!)))
     );
     await click("cin-opts");
     ok("player settings open", await ev(() => !!document.querySelector("#cinema .cin-opts")));
@@ -199,39 +230,47 @@ import type { Item } from "../../src/features/core/model";
     ok("…and close", await ev(() => !document.querySelector("#cinema .cin-opts")));
     await click("cin-srcs");
     ok("server list shows both servers", (await ev(() => document.querySelectorAll("#cinema .srcrow").length)) === 2);
-    await p.click("#cinema .srcrow >> nth=1");
+    await p.click("#cinema .cin-srcs .srcrow >> nth=1");
     await ready();
     ok(
         "picking the other server switches to it",
         (await ev(() => __ulTest.W.player!.k)) === 1 &&
             (await ev(() => document.querySelector<HTMLVideoElement>("#cinema video")!.src)).includes("b=1")
     );
+    await click("cin-opts");
     const m0 = await ev(() => !!__ulTest.W.player!.marked);
-    await click("cin-mark");
-    ok("watched button flips the mark", (await ev(() => !!__ulTest.W.player!.marked)) === !m0);
-    await click("cin-mark");
+    await p.click('#cinema .cin-opts [data-act="cin-mark"]');
+    ok("watched (player settings) flips the mark", (await ev(() => !!__ulTest.W.player!.marked)) === !m0);
+    await p.click('#cinema .cin-opts [data-act="cin-mark"]');
     ok("…and a second click flips it back", (await ev(() => !!__ulTest.W.player!.marked)) === m0);
     await click("cin-next");
     await ready();
-    ok("next goes to episode 3", (await ev(() => __ulTest.W.player!.e)) === 3);
-    await click("cin-prev");
+    ok("⏭ goes to episode 3", (await ev(() => __ulTest.W.player!.e)) === 3);
+    await click("cin-opts");
+    await p.click('#cinema .cin-opts [data-act="cin-prev"]');
     await ready();
-    ok("previous goes back to episode 2", (await ev(() => __ulTest.W.player!.e)) === 2);
+    ok("previous (player settings) goes back to episode 2", (await ev(() => __ulTest.W.player!.e)) === 2);
     await p.keyboard.press(" ");
     await p.waitForTimeout(150);
     const pa = (await vid())!.paused;
     await p.keyboard.press(" ");
     await p.waitForTimeout(150);
     ok("space plays and pauses", pa !== (await vid())!.paused);
+    await ev(() => document.querySelector<HTMLVideoElement>("#cinema video")!.pause());
     await click("cin-full");
     await p.waitForTimeout(400);
-    const fs1 = await ev(() => !!document.fullscreenElement);
+    const fsEl = await ev(() => (document.fullscreenElement ? document.fullscreenElement.className : ""));
+    ok(
+        "full screen is the player alone (its picture and controls), not the page",
+        fsEl === "" || /\bcin-main\b/.test(fsEl),
+        fsEl || "(this browser refused full screen)"
+    );
     await p.keyboard.press("f");
     await p.waitForTimeout(400);
     ok(
-        "full screen button and F toggle full screen",
-        fs1 !== (await ev(() => !!document.fullscreenElement)) || fs1 === true,
-        `fullscreen after click: ${fs1}`
+        "F leaves it again",
+        !fsEl || !(await ev(() => !!document.fullscreenElement)),
+        `fullscreen after click: ${fsEl}`
     );
     if (await ev(() => !!document.fullscreenElement)) await ev(() => document.exitFullscreen());
 
@@ -247,6 +286,7 @@ import type { Item } from "../../src/features/core/model";
     await p.waitForFunction(() => [...__ulTest.EXT.frames.values()].some(F => F.jobs.has("watch.sources")), null, {
         timeout: 8000,
     });
+    await click("cin-srcs");
     await click("ss-open");
     await p.waitForSelector("#ss-in");
     await p.fill("#ss-in", "smb://home/Test+Show+Batch\n" + U("c/{title}/S{s2}E{e2}.webm") + "\nnot a server");

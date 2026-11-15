@@ -46,23 +46,20 @@ const ZIP = ENV.EXPORT,
     await ev(() => __ulTest.goTab("learn"));
     await page.waitForTimeout(300);
     await page.screenshot({ path: ENV.OUT + `/s_learn_${W}.png` });
-    await page.click('[data-act="learn-open"][data-k="maths"]');
-    await page.waitForTimeout(200);
-    await page.click('[data-act="learn-lvl"][data-f="Real & functional analysis"][data-l="2"]');
-    await page.waitForTimeout(100);
-    await page.click('[data-act="pw-new"][data-k="maths-phd"]');
-    await page.waitForTimeout(400);
-    ok(
-        "maths-phd pathway",
-        await ev(() => __ulTest.pwCur()!.template === "maths-phd" && __ulTest.pwCur()!.books.length > 55),
-        await ev(() => __ulTest.pwCur()!.books.length + "")
-    );
-    ok("stages computed", (await ev(() => Math.max(...Object.values(__ulTest.pwStages(__ulTest.pwCur()!))))) >= 5);
-    await page.screenshot({ path: ENV.OUT + `/s_phd_${W}.png`, fullPage: false });
     await ev(() => {
-        __ulTest.ui.learnSub = "maths";
+        const C = __ulTest.LCS()[0];
+        if (C) __ulTest.ui.learnSub = C.id;
         __ulTest.goTab("learn");
     });
+    await page.waitForTimeout(300);
+    ok(
+        "your first course opens, every book in its reading order",
+        await ev(() => {
+            const C = __ulTest.lcCur();
+            return !C || __ulTest.lcOrder(C).length === C.books.filter(b => !b.ref).length;
+        })
+    );
+    await page.screenshot({ path: ENV.OUT + `/s_phd_${W}.png`, fullPage: false });
     await page.waitForTimeout(200);
     await page.screenshot({ path: ENV.OUT + `/s_subj_${W}.png` });
     // discover taste

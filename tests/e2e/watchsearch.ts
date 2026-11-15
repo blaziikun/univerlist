@@ -196,33 +196,50 @@ import type { Candidate } from "../../src/features/core/model";
     r = await merge("x", [{ ...A(30, "X Show", 2020, "FALL"), flag: true }], [], []);
     ok("flagged titles are hidden", r.length === 0);
 
-    // the library has no say: a show only in your library isn't found, and results don't mark what you own
+    // your own first, at once: a show in your library that matches is listed the moment a key is pressed, marked as
+    // yours; the catalogues are asked once you pause, and join below without holding up the typing
+    const asked: string[] = [];
+    p.on("request", r => {
+        if (/api\.tvmaze\.com\/search\/shows/.test(r.url())) asked.push(r.url());
+    });
     await p.evaluate(() => {
         __ulTest.addItem({ medium: "tv", title: "Zzyzx Library Only", status: "active" });
         __ulTest.goWatch();
     });
     await p.waitForSelector("#wq");
     await p.fill("#wq", "Zzyzx");
-    await p.waitForTimeout(1500);
-    const res = await p.evaluate(() => ({
+    const now = await p.evaluate(() => ({
         list: (__ulTest.W.results || []).map(x => x.title),
         pills: document.querySelectorAll("#sres .pill").length,
+        rows: document.querySelectorAll("#sres .sli").length,
     }));
     ok(
-        "a show only in your library isn't in the results",
-        !res.list.some(t => /Zzyzx/.test(t)),
-        JSON.stringify(res.list)
+        "your own show that matches is listed at once (before any catalogue answers), marked as yours",
+        now.list[0] === "Zzyzx Library Only" && now.pills === 1 && now.rows >= 1,
+        JSON.stringify(now)
     );
-    await p.fill("#wq", "Frieren");
+    await p.fill("#wq", "");
+    asked.length = 0;
+    await p.click("#wq");
+    await p.keyboard.type("Frieren", { delay: 40 });
+    const typing = await p.evaluate(() => document.activeElement && document.activeElement.id === "wq");
     await p.waitForTimeout(1500);
     const res2 = await p.evaluate(() => ({
         list: (__ulTest.W.results || []).map(x => x.title),
         pills: document.querySelectorAll("#sres .pill").length,
     }));
     ok(
-        "results show no library marks",
-        res2.list.some(t => /Frieren/.test(t)) && res2.pills === 0,
-        JSON.stringify(res2)
+        "the catalogues' answers join once you pause: one search, not one per letter",
+        res2.list.some(t => /Frieren/.test(t)) && res2.pills === 0 && asked.length <= 2 && typing,
+        JSON.stringify(res2) + " asked " + asked.length
+    );
+    // typing back to a word searched a moment ago shows its answers again at once
+    asked.length = 0;
+    await p.keyboard.press("Backspace");
+    await p.keyboard.type("n");
+    ok(
+        "…and an answer from a moment ago comes back at once, without asking again",
+        (await p.evaluate(() => (__ulTest.W.results || []).some(x => /Frieren/.test(x.title)))) && asked.length === 0
     );
     ok("no page errors", !errs.length, errs.slice(0, 3).join(" / "));
     await b.close();

@@ -32,6 +32,7 @@ import { initGuide } from "../settings/guide";
 import { initItemActions } from "../library/item-actions";
 import { initActions } from "./actions";
 import { initEvents } from "./events";
+import { initRoute } from "../watch-read/route";
 
 // the browser tests' way into the page (window.__ulTest), in the builds they run only: __UL_TEST_HOOK__ is false in
 // every other build, so this call and the whole hook are left out of it (core/test-hook.ts)
@@ -58,4 +59,5 @@ initExtensions();
 initGuide();
 initItemActions();
 initActions();
+initRoute();
 initEvents();

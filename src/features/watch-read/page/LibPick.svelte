@@ -1,7 +1,8 @@
 <!--
     src/features/watch-read/page/LibPick.svelte
     ─────────────────────────────────────────────────────────────────
-      "Which one is it?" on a show's page, when its name didn't match anything on your servers (or matched the wrong
+      "Which one is it?" on a show's page or in the player's list of servers, when its name didn't match anything on
+      your servers (or matched the wrong
       thing): a box to search them by another name, and what they have, to pick by hand. The one picked is kept for
       this show (meta.watchMap). libPickView() and the rest in medialibs.ts; its buttons and box are its own.
     ─────────────────────────────────────────────────────────────────
@@ -14,6 +15,7 @@
 
     const v = $derived.by(() => {
         void stageNews.page;
+        void stageNews.srv;
         return libPickView();
     });
     // what's in the box: the name it last searched for, or what you're typing

@@ -26,6 +26,7 @@ declare global {
         __kept: WeakSet<Element>; // elements a test checks are still the same ones after the page draws again
         __laned?: number; // blocks-stats-tiers: set by a link that mustn't run
         __long: number[]; // library-load: long tasks, in ms
+        __old: HTMLVideoElement; // player-keeps-playing: the video playing before the next episode
         __path: string; // watch-card-sources: where the extension was asked from
         __pwned?: number; // csp: set only if a script that mustn't run did
         __renders: number; // how often the page was drawn again

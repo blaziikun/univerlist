@@ -1,6 +1,6 @@
 // src/features/learning-centre/learning-import.ts
 // ─────────────────────────────────────────────────────────────────
-//  The Learning Centre: fetching a university's module list and reading lists into a path
+//  The Learning Centre: reading a university's module list and reading lists, into a course
 //
 //  Paste a link: a programme or module page (the modules, by year, with codes and credits), or a reading list (the
 //  books, in order). It's fetched (directly when the site allows it, otherwise through your site's /api, which only
@@ -25,12 +25,12 @@ import {
     toast,
     ui,
 } from "../core/core";
-import type { Modal, PathBook, PathModule } from "../core/model";
+import type { Modal, PathModule } from "../core/model";
 import { pxBase, pxURL } from "../sources/proxy";
 import { autoCovers } from "../sources/covers";
 import { renderMain } from "../core/shell";
 import { closeModal, renderOverlay } from "../core/modals";
-import { acId, lcSub, pwLib, PWS } from "./learning";
+import { acId, lcAddBook, lcPick, lcSub, lcTopic, pwLib } from "./learning";
 import { uniAddProgramme } from "./learning-curricula";
 
 const LC_CODE =
@@ -75,7 +75,7 @@ export interface LcRow {
     imp?: string;
 }
 /** what a page held: modules or readings, and how it was read */
-interface LcFound {
+export interface LcFound {
     kind: string;
     rows: LcRow[];
     how?: string;
@@ -433,7 +433,8 @@ const lcTalisJSON = (u: string): string | null => {
         return null;
     }
 };
-async function lcRead(u: string, kind: string): Promise<LcFound> {
+/** read a page (modules, readings, or "auto" to work it out): fetched, then parsed into rows */
+export async function lcRead(u: string, kind: string): Promise<LcFound> {
     const tj = kind !== "modules" && lcTalisJSON(u);
     if (tj) {
         try {
@@ -458,8 +459,8 @@ async function lcRead(u: string, kind: string): Promise<LcFound> {
 /** the text fields of a row, which its table can change */
 export const ROW_TEXT = ["stage", "code", "name", "credits", "section", "t", "a", "year", "imp"] as const;
 export type RowText = (typeof ROW_TEXT)[number];
-/** the fetch dialog: where it was opened from (a pathway, one of its modules, or a course's Curricula), the link, and
- * what was found */
+/** the fetch dialog: where it was opened from (a course, one of its degree's modules, or Curricula), the link, and
+ * what was found; for readings, the topic and level they go in at */
 export interface LcImportModal extends Modal {
     pid?: string;
     mid?: string;
@@ -473,6 +474,7 @@ export interface LcImportModal extends Modal {
     uni?: string;
     pname?: string;
     into?: string;
+    lvl?: number;
     chain?: boolean;
     toLib?: boolean;
 }
@@ -484,7 +486,7 @@ const redraw = (m: Modal, focus?: boolean) => {
 };
 /** fetch the link and read what's there (modules or readings): the next step shows it to check, or says why not */
 export function lcFetch(m: LcImportModal, url: string) {
-    const P = m.cur ? null : PWS().find(p => p.id === m.pid),
+    const P = m.cur ? null : lcSub(m.pid),
         u = url.trim();
     m.url = u;
     m.err = "";
@@ -531,35 +533,35 @@ export function lcPaste(m: LcImportModal, text: string) {
     m.how = "pasted";
     redraw(m, true);
 }
-/** save what was kept: modules (into stages, an existing module of the same code updated), readings (into a module,
- *  one per section, or none; in order if asked; into your library too if asked), or, for Curricula, a programme */
 /** the sections a reading list's rows came in (its weeks, its parts), in order */
 export const lcSections = (R: LcRow[]) => [...new Set(R.map(r => r.section).filter(Boolean))];
+/** save what was kept: for Curricula, a programme; for a course, modules (into its degree's stages, an existing module
+ *  of the same code updated) or books (into a topic, or a topic per section, at a level; in order if asked; into your
+ *  library too if asked) */
 export function lcSave(m: LcImportModal) {
-    const P = m.cur ? null : PWS().find(p => p.id === m.pid);
+    const C = lcSub(m.cur || m.pid);
     const R = (m.rows || []).filter(r => r.keep);
+    if (!C) return;
     let note = "";
     if (m.cur) {
         if (m.found !== "modules") {
             toast("That looks like a reading list: add programmes from a module list.");
             return;
         }
-        const n = uniAddProgramme(m.cur, {
+        const n = uniAddProgramme(C.id, {
             uni: m.uni || "",
             name: m.pname || "Programme",
             url: m.url || "",
             modules: R.map(r => ({ name: r.name || "", code: r.code, core: r.core !== false })),
         });
         closeModal();
-        ui.uniSub = m.cur;
         renderMain();
         toast(`Added ${m.uni || "the programme"}: ${plural(n, "module")}`);
         return;
     }
-    if (!P) return;
     if (m.found === "modules") {
-        const stages = (P.stages ||= []),
-            modules = (P.modules ||= []);
+        const stages = (C.stages ||= []),
+            modules = (C.modules ||= []);
         for (const r of R) {
             let sid = "";
             if (r.stage) {
@@ -587,57 +589,41 @@ export function lcSave(m: LcImportModal) {
                     name: r.name || "",
                     credits: r.credits || "",
                     core: r.core !== false,
+                    status: "planned",
                 });
         }
-        note = `Added ${plural(R.length, "module")}`;
+        C.degree = true;
+        note = `Added ${plural(R.length, "module")} to the degree`;
     } else {
-        const into = m.mid || (m.into ?? (lcSections(m.rows || []).length ? "@sections" : "")),
+        const mod: PathModule | undefined = m.mid ? (C.modules || []).find(x => x.id === m.mid) : undefined,
+            into = mod ? "" : (m.into ?? (lcSections(m.rows || []).length ? "@sections" : C.topics[0]?.id || "")),
             chain = m.chain !== false,
-            toLib = !!m.toLib,
-            S = lcSub(P.sub),
-            modules = (P.modules ||= []);
-        const secMod: Record<string, string> = {},
-            modFor = (r: LcRow) => {
-                if (into !== "@sections") return into;
-                const n = r.section || "Readings";
-                if (!secMod[n]) {
-                    const ex = modules.find(x => norm(x.name) === norm(n));
-                    if (ex) secMod[n] = ex.id;
-                    else {
-                        const made: PathModule = {
-                            id: acId(),
-                            stage: "",
-                            code: "",
-                            name: n,
-                            credits: "",
-                            core: true,
-                        };
-                        modules.push(made);
-                        secMod[n] = made.id;
-                    }
-                }
-                return secMod[n];
-            };
+            toLib = !!m.toLib;
+        const topicFor = (r: LcRow) =>
+            mod
+                ? lcTopic(C, mod.name.replace(/^[A-Z]{2,6}[ -]?\d{2,6}[A-Z]?\s*/, "") || mod.name)
+                : into === "@sections"
+                  ? lcTopic(C, r.section || "Readings")
+                  : into || lcTopic(C, "Readings");
         const prev: Record<string, string> = {};
+        let added = 0;
         for (const r of R) {
-            const mid = modFor(r),
-                id = "b" + acId();
-            const b: PathBook = {
-                id,
+            const topic = topicFor(r);
+            const { b, added: fresh } = lcAddBook(C, {
                 t: r.t || "",
                 a: r.a || "",
-                year: r.year || "",
-                isbn: r.isbn || "",
-                th: "",
-                mod: mid,
-                st: "todo",
-                note: "",
-                opt: r.imp === "opt" || undefined,
-                after: chain && prev[mid] ? [{ k: prev[mid], s: "start" }] : [],
-            };
-            P.books.push(b);
-            prev[mid] = id;
-            if (toLib && !pwLib(b)) {
+                year: r.year || undefined,
+                isbn: r.isbn || undefined,
+                topic,
+                lvl: m.lvl || 2,
+            });
+            if (!fresh) continue;
+            added++;
+            if (mod) b.mod = mod.id;
+            if (r.imp === "opt") b.opt = true;
+            if (chain && prev[topic]) b.after = [{ k: prev[topic], s: "start" }];
+            prev[topic] = b.id;
+            if (toLib && !pwLib(b))
                 b.lib = addItem(
                     {
                         medium: "book",
@@ -646,20 +632,18 @@ export function lcSave(m: LcImportModal) {
                         creator: b.a,
                         year: Number(b.year) || undefined,
                         isbn: b.isbn || undefined,
-                        subject: S ? S.name : "",
+                        subject: C.name,
                         status: "want",
                     },
                     "Add " + b.t
                 );
-            }
         }
-        note = `Added ${plural(R.length, "reading")}`;
+        note = `Added ${plural(added, "book")}` + (added < R.length ? ` (${R.length - added} already in it)` : "");
         if (toLib) setTimeout(() => autoCovers(), 400);
     }
     markDirty();
     closeModal();
-    ui.pwId = P.id;
-    P.view = "modules";
+    lcPick(C.id);
     renderMain();
     toast(note);
 }

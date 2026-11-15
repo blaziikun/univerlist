@@ -52,7 +52,7 @@ const X = `"><img src=x onerror="window.__x=(window.__x||0)+1"><svg onload="wind
         __ulTest.meta.chars.push({ id: "c1", name: X, why: X, tags: [X], media: [], rank: 1 });
         __ulTest.ensureTag(X);
         const C = __ulTest.ACS();
-        C.subjects.push({
+        C.courses.push({
             id: "s-x",
             name: X,
             g: X,
@@ -60,12 +60,25 @@ const X = `"><img src=x onerror="window.__x=(window.__x||0)+1"><svg onload="wind
             order: [X],
             sources: [{ id: "q", kind: "uni", name: X, url: "javascript:window.__x=7", note: X }],
             opps: [{ id: "o", t: X, url: "javascript:window.__x=8", note: X }],
+            degree: true,
+            uni: X,
+            url: "javascript:window.__x=9",
+            topics: [{ id: "tx", name: X, area: X }],
+            books: [{ id: "k", t: X, a: X, st: "reading", topic: "tx", lvl: 2, top: true }],
+            progs: [
+                {
+                    id: "px",
+                    uni: X,
+                    name: X,
+                    url: "javascript:window.__x=10",
+                    src: "javascript:window.__x=11",
+                    modules: [{ name: X, code: X, topics: ["tx"], books: [[X, X]], list: "javascript:window.__x=12" }],
+                },
+            ],
+            modules: [
+                { id: "m", name: X, code: X, status: "taking", topics: [{ t: X, done: false }] } as PathModule,
+            ] /* cast: a module without a stage, as one from a file might be */,
         });
-        const P = __ulTest.lcNewPath({ name: X, sub: "s-x", uni: X, about: X, method: X });
-        P.books.push({ id: "k", t: X, a: X, th: X, st: "reading", note: X, top: true });
-        P.modules = [
-            { id: "m", name: X, code: X, status: "taking", topics: [{ t: X, done: false }] } as PathModule,
-        ]; /* cast: a module without a stage, as one from a file might be */
     }, X);
     await ev(() => {
         window.__bad = [];
@@ -109,7 +122,7 @@ const X = `"><img src=x onerror="window.__x=(window.__x||0)+1"><svg onload="wind
         await p.waitForTimeout(30);
     }
     await ev(() => {
-        __ulTest.ui.pwId = __ulTest.PWS()[0].id;
+        __ulTest.ui.learnSub = "s-x";
         __ulTest.ui.lcOpen = "m";
         __ulTest.setMode("academic");
         __ulTest.goTab("learn");

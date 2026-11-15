@@ -42,7 +42,7 @@ export const BUILTINS: Builtin[] = [
         id: "learning-centre",
         name: "Learning Centre",
         jobs: [],
-        desc: "A mode for what you're learning (after Games, like any mode): Courses (academic ones and interests), each one place for everything: your level and how much you've finished, what to read in what order (knowing what each book needs first), and its years, modules, topics, marks and what it takes to graduate; and Curricula (what different universities teach, topic by topic, with the books they set). It starts empty; fetch modules and reading lists from universities' own pages. Switched off, your academic books show under Literature.",
+        desc: "A mode for learning something in the best order (after Games, like any mode): type a subject or a topic and a course is built from the standard books for each topic, by level, with what each needs first, and from the programmes that teach it, whose modules and reading lists are fetched from the universities' own pages. Next says what to read now; the map shows every book by topic and level; Curricula shows each programme's modules and reading lists. A degree you're taking can keep its modules and marks too. Switched off, your academic books show under Literature.",
     },
     {
         id: "backdrops",

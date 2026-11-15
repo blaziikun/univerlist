@@ -1,8 +1,8 @@
 // What's playing carries on while you use the player around it: opening its settings or its list of servers, ticking
-// the episode watched, moving a button, rearranging the page beside it, and episodes arriving in cinema mode used to
-// draw a new <video> each time (the episode reloaded, from where it was last saved, or from the start with Resume off).
-// Changing whose controls the player uses still brings a new one, from where you are. And opening it in cinema mode
-// draws one video, not two.
+// the episode watched, rearranging the page around it, cinema mode, and episodes arriving used to draw a new <video>
+// each time (the episode reloaded, from where it was last saved, or from the start with Resume off). Opening it in
+// cinema mode draws one video, not two. The next episode stops the one before and lets it go (it used to go on playing
+// underneath). Panels close on a click elsewhere; the lights darken everything but the player.
 import fs from "node:fs";
 import http from "node:http";
 import ENV from "./env.ts";
@@ -55,7 +55,6 @@ import { ok, evaluator, listen } from "./helpers.ts";
                     autoNext: false,
                     resume: false,
                     layout: o.layout || "docked",
-                    controls: "custom",
                 };
                 __ulTest.meta.settings.watchPage = {};
                 __ulTest.ui.page = "watch";
@@ -75,6 +74,7 @@ import { ok, evaluator, listen } from "./helpers.ts";
                             { name: "Other", how: "original", url: a + "?b=1" },
                         ],
                     ],
+                    ["0:2", [{ name: "Home", how: "original", url: a + "?e=2" }]],
                 ]);
                 __ulTest.watchStart(0, 1, { empty: true });
             },
@@ -112,6 +112,8 @@ import { ok, evaluator, listen } from "./helpers.ts";
     await play();
     await ready();
     await mark();
+    const wake = () => p.mouse.move(500 + Math.random() * 40, 300);
+    await wake();
     await p.click('#cinema [data-act="cin-opts"]');
     const r = await same();
     ok(
@@ -129,8 +131,12 @@ import { ok, evaluator, listen } from "./helpers.ts";
         r3.same && r3.t === 2 && (await ev(() => document.querySelectorAll("#cinema .srcrow").length === 2)),
         JSON.stringify(r3)
     );
-    await p.click('#cinema [data-act="cin-srcs"]');
-    await p.click('#cinema [data-act="cin-mark"]');
+    // a click anywhere else closes a panel, as a menu closes
+    await p.mouse.click(700, 840);
+    ok("a click outside closes the server list", await ev(() => !document.querySelector("#cinema .cin-srcs")));
+    await wake();
+    await p.click('#cinema [data-act="cin-opts"]');
+    await p.click('#cinema .cin-opts [data-act="cin-mark"]');
     const r4 = await same();
     ok(
         "ticking it watched keeps it playing, and the tick shows",
@@ -141,110 +147,98 @@ import { ok, evaluator, listen } from "./helpers.ts";
             )),
         JSON.stringify(r4)
     );
+    await p.mouse.click(30, 840);
+    ok("…and a click outside closes the player settings", await ev(() => !document.querySelector("#cinema .cin-opts")));
     await ev(() => document.querySelector<HTMLElement>('#cinema [data-act="wp-opts"]')!.click());
     ok(
-        "⋯ says its panel is open while it is",
+        "the page's ⚙ says its panel is open while it is",
         await ev(
             () =>
                 !!document.querySelector("#cinema .wpopts") &&
-                document.querySelector('#cinema .cin-head [data-act="wp-opts"]')!.getAttribute("aria-pressed") ===
+                document.querySelector('#cinema .cin-head [data-act="wp-opts"]')!.getAttribute("aria-expanded") ===
                     "true"
         )
     );
-    await ev(() =>
-        document.querySelector<HTMLElement>('#cinema [data-act="wp-tool"][data-k="next"][data-d="-1"]')!.click()
-    );
-    const r5 = await same();
     ok(
-        "moving a button keeps it playing",
-        r5.same &&
-            r5.t === 2 &&
-            (await ev(() => __ulTest.WP().tools.indexOf("next") < __ulTest.WP().tools.indexOf("mark"))),
-        JSON.stringify(r5)
+        "…and it holds only the episodes' look and the layout (no list of buttons to place)",
+        await ev(
+            () =>
+                !document.querySelector(
+                    '#cinema [data-act="wp-tool"], #cinema [data-act="wp-spot"], #cinema [data-act="wp-edit"]'
+                ) && document.querySelectorAll('#cinema .wpopts [data-act="wp-place"]').length === 8
+        )
     );
     await ev(() =>
-        document.querySelector<HTMLElement>('#cinema [data-act="wp-spot"][data-k="time"][data-v="under"]')!.click()
+        document.querySelector<HTMLElement>('#cinema [data-act="wp-place"][data-k="eps"][data-v="side"]')!.click()
     );
     const r6 = await same();
     ok(
-        "…and putting one under the video",
-        r6.same && (await ev(() => !!document.querySelector("#cinema .cin-under .pc-time"))),
+        "moving the seasons and episodes beside the player keeps it playing",
+        r6.same && r6.t === 2 && (await ev(() => !!document.querySelector("#cinema .cin-side .cb-eps"))),
         JSON.stringify(r6)
     );
-    ok(
-        "…which reads where it is at once",
-        await ev(() => /^0:02 \//.test(document.querySelector("#cinema .cin-under .pc-time")!.textContent)),
-        await ev(() => document.querySelector("#cinema .cin-under .pc-time")!.textContent)
-    );
     await ev(() =>
-        document.querySelector<HTMLElement>('#cinema [data-act="wp-place"][data-k="eps"][data-v="main"]')!.click()
-    );
-    await ev(() =>
-        document.querySelector<HTMLElement>('#cinema [data-act="wp-place"][data-k="about"][data-v="main"]')!.click()
-    );
-    await ev(() =>
-        document.querySelector<HTMLElement>('#cinema [data-act="wp-place"][data-k="seasons"][data-v="main"]')!.click()
+        document.querySelector<HTMLElement>('#cinema [data-act="wp-place"][data-k="about"][data-v="left"]')!.click()
     );
     const r7 = await same();
     ok(
-        "moving every block under the player (the side goes) keeps it playing",
-        r7.same &&
-            r7.t === 2 &&
-            (await ev(
-                () =>
-                    !document.querySelector("#cinema .cin-side") &&
-                    document.querySelector("#cinema")!.classList.contains("noside")
-            )),
+        "…and the description on its left",
+        r7.same && r7.t === 2 && (await ev(() => !!document.querySelector("#cinema .cin-side.left .cb-about"))),
         JSON.stringify(r7)
     );
     await ev(() => document.querySelector<HTMLElement>('#cinema [data-act="wp-reset"]')!.click());
     const r8 = await same();
     ok(
-        "putting everything back keeps it playing",
-        r8.same && (await ev(() => !!document.querySelector("#cinema .cin-side"))),
+        "putting everything back (both under the player) keeps it playing",
+        r8.same &&
+            (await ev(
+                () =>
+                    !document.querySelector("#cinema .cin-side") &&
+                    !!document.querySelector("#cinema .cin-mb .cb-eps") &&
+                    !!document.querySelector("#cinema .cin-mb .cb-about")
+            )),
         JSON.stringify(r8)
     );
-    await ev(() => {
-        __ulTest.ui.wpOpts = true;
-        __ulTest.cinSideRedraw();
-    });
-    await ev(() => document.querySelector<HTMLElement>('#cinema .wpopts [data-act="wp-edit"]')!.click());
+    await ev(() => document.querySelector<HTMLElement>('#cinema [data-act="cin-lay"]')!.click());
     const r9 = await same();
     ok(
-        "arranging the player on the page keeps it playing",
-        r9.same && (await ev(() => !!document.querySelector("#cinema .we-bar"))),
+        "cinema mode keeps it playing: the same video, never loaded again",
+        r9.same && r9.t === 2 && (await ev(() => document.querySelector("#cinema")!.classList.contains("cinema"))),
         JSON.stringify(r9)
     );
-    await ev(() => document.querySelector<HTMLElement>('#cinema .we-bar [data-act="wp-edit"]')!.click());
+    await ev(() => document.querySelector<HTMLElement>('#cinema [data-act="cin-lay"]')!.click());
+    const r10 = await same();
+    ok("…and so does leaving it", r10.same && r10.t === 2, JSON.stringify(r10));
 
-    // whose controls: a new video with them, from where you are, as soon as the player draws again
-    await p.click('#cinema [data-act="cin-opts"]');
-    await p.selectOption('#cinema [data-po="controls"]', "browser");
-    await p.click('#cinema [data-act="cin-opts"]');
+    // the next episode: the one before stops and lets go of its stream, so two can never play at once
+    const old = await ev(() => {
+        const v = document.querySelector<HTMLVideoElement>("#cinema video")!;
+        v.play();
+        window.__kept = new WeakSet([v]);
+        window.__old = v;
+        return !v.paused;
+    });
+    await ev(() => document.querySelector<HTMLElement>('#cinema [data-act="cin-next"]')!.click());
     await ready();
-    const r10 = await ev(() => {
-        const v = document.querySelector<HTMLVideoElement>("#cinema video");
+    const gone = await ev(() => {
+        const o = window.__old;
+        o.dispatchEvent(new Event("canplay")); // the old one finishing loading late must not start it
         return {
-            fresh: !window.__kept.has(v!),
-            controls: v!.controls,
-            custom: !!document.querySelector("#cinema .pc"),
+            paused: o.paused,
+            src: o.getAttribute("src"),
+            empty: o.networkState === HTMLMediaElement.NETWORK_EMPTY,
+            gone: !o.isConnected,
+            videos: document.querySelectorAll("video").length,
+            ep: __ulTest.W.player!.e,
         };
     });
+    await p.waitForTimeout(300);
     ok(
-        "changing whose controls brings a new video with the browser's",
-        r10.fresh && r10.controls && !r10.custom,
-        JSON.stringify(r10)
+        "the next episode: the one before is stopped, let go of and gone, with one video left",
+        old && gone.paused && !gone.src && gone.empty && gone.gone && gone.videos === 1 && gone.ep === 2,
+        JSON.stringify(gone)
     );
-    await p
-        .waitForFunction(() => document.querySelector<HTMLVideoElement>("#cinema video")!.currentTime >= 1.9, null, {
-            timeout: 5000,
-        })
-        .catch(() => {});
-    ok(
-        "…from where it was",
-        await ev(() => document.querySelector<HTMLVideoElement>("#cinema video")!.currentTime >= 1.9),
-        await ev(() => document.querySelector<HTMLVideoElement>("#cinema video")!.currentTime)
-    );
+    ok("…and still silent a moment later", await ev(() => window.__old.paused));
 
     // cinema mode: one video when it opens, and the episodes arriving later don't reload it
     await ev(() => {
@@ -269,13 +263,23 @@ import { ok, evaluator, listen } from "./helpers.ts";
     await ev(() => document.querySelector<HTMLElement>('#cinema [data-act="cin-lights"]')!.click());
     const r12 = await same();
     ok(
-        "the lights go down around it, and it plays on",
+        "the lights go down around it (everything but the player dark), and it plays on",
         r12.same &&
-            (await ev(
-                () =>
+            (await ev(() => {
+                const dark = document.querySelector("#cinema .cin-dark"),
+                    main = document.querySelector("#cinema .cin-main")!.getBoundingClientRect(),
+                    // what's on top in the middle of the player, and beside it
+                    inside = document.elementFromPoint(main.left + main.width / 2, main.top + 20),
+                    outside = document.elementFromPoint(innerWidth / 2, 20); // the top bar
+                return (
                     document.querySelector("#cinema")!.classList.contains("lights") &&
-                    document.querySelector('#cinema [data-act="cin-lights"]')!.textContent === "☀"
-            )),
+                    !!dark &&
+                    getComputedStyle(dark).position === "fixed" &&
+                    !!inside?.closest(".cin-main") &&
+                    outside === dark &&
+                    document.querySelector('#cinema [data-act="cin-lights"]')!.getAttribute("aria-pressed") === "true"
+                );
+            })),
         JSON.stringify(r12)
     );
     await p.keyboard.press("l");

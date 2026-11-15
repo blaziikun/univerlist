@@ -1,4 +1,5 @@
-// The player's one Servers bar (icon · 1 2 3 · +), its card button, and finished shows staying finished.
+// The player's one server button (it lists them; no 1 2 3 chips), the show's name opening its card, and finished shows
+// staying finished.
 import fs from "node:fs";
 import http from "node:http";
 import ENV from "./env.ts";
@@ -83,69 +84,68 @@ import { ok, evaluator, listen } from "./helpers.ts";
     await play({ id, title: "Bar Show", e: 1 });
     await ready();
 
-    // ---- the bar ----
+    // ---- the one server button ----
     const bar = await ev(() => {
-        const s = document.querySelector("#cinema .cin-srv");
+        const s = document.querySelector('#cinema [data-act="cin-srcs"]');
         return (
             s && {
-                icon: !!s.querySelector(".srv.ico svg"),
-                chips: [...s.querySelectorAll('[data-act="cin-src-pick"]')].map(x => x.textContent.trim()),
-                on: (s.querySelector(".srv.on") || {}).textContent,
-                add: !!s.querySelector('[data-act="ss-open"]'),
-                inHead: !!s.closest(".cin-head, .cin-top"),
+                icon: !!s.querySelector("svg"),
+                n: (s.querySelector(".srvn") || {}).textContent,
+                inHead: !!s.closest(".cin-head"),
+                chips: document.querySelectorAll('#cinema [data-act="cin-src-pick"]').length,
+                selects: document.querySelectorAll("#cinema select:not([data-cinseason])").length,
             }
         );
     });
     ok(
-        "one bar at the top: icon, Server 1 2, +",
-        bar && bar.icon && bar.chips.join() === "1,2" && bar.on === "1" && bar.add && bar.inHead,
+        "one server button at the top: its icon and how many there are, no 1 2 3 chips, no browser list",
+        bar && bar.icon && bar.n === "2" && bar.inHead && bar.chips === 0 && bar.selects === 0,
         JSON.stringify(bar)
     );
     ok(
-        'no separate "Servers" button',
+        'no separate "Servers" button, and no separate button for the card',
         await ev(
             () =>
-                ![...document.querySelectorAll("#cinema button")].some(x => x.textContent.trim().startsWith("Servers"))
+                ![...document.querySelectorAll("#cinema button")].some(x =>
+                    x.textContent.trim().startsWith("Servers")
+                ) &&
+                document.querySelectorAll('#cinema [data-act="open"]').length === 1 &&
+                document.querySelector('#cinema [data-act="open"]')!.classList.contains("cin-name")
         )
     );
     ok(
         "the long file name isn't shown under the player",
         await ev(
-            () =>
-                !/very long file name/.test(
-                    (document.querySelector("#cinema .cin-under") || document.querySelector("#cinema .cin-bot") || {})
-                        .textContent || ""
-                )
+            () => !/very long file name/.test((document.querySelector("#cinema .cin-under") || {}).textContent || "")
         )
     );
     ok(
-        "…but hovering a server says what it is",
+        "…but the button says what's playing",
         await ev(() =>
-            /very long file name/.test(
-                document.querySelector<HTMLElement>('#cinema [data-act="cin-src-pick"][data-k="0"]')!.title
-            )
+            /very long file name/.test(document.querySelector<HTMLElement>('#cinema [data-act="cin-srcs"]')!.title)
         )
+    );
+    await p.click('#cinema [data-act="cin-srcs"]');
+    ok(
+        "it lists them as Server 1 and Server 2, with their names, in the app's own list",
+        await ev(() => {
+            const r = [...document.querySelectorAll("#cinema .cin-srcs .srcrow")].map(x => x.textContent);
+            return r.length === 2 && /Server 1/.test(r[0]) && /very long/.test(r[0]) && /Server 2/.test(r[1]);
+        })
     );
     await p.click('#cinema [data-act="cin-src-pick"][data-k="1"]');
     await ready();
     ok(
-        "Server 2 switches to it",
+        "Server 2 switches to it, and the list closes",
         (await ev(() => __ulTest.W.player!.k)) === 1 &&
-            (await ev(() => document.querySelector<HTMLVideoElement>("#cinema video")!.src)).includes("b=1")
+            (await ev(() => document.querySelector<HTMLVideoElement>("#cinema video")!.src)).includes("b=1") &&
+            (await ev(() => !document.querySelector("#cinema .cin-srcs")))
     );
-    await p.click("#cinema .cin-srv .srv.ico");
-    ok(
-        "the icon lists them as Server 1 and Server 2, with their names",
-        await ev(() => {
-            const r = [...document.querySelectorAll("#cinema .srcrow")].map(x => x.textContent);
-            return r.length === 2 && /Server 1/.test(r[0]) && /very long/.test(r[0]) && /Server 2/.test(r[1]);
-        })
-    );
-    await p.click("#cinema .cin-srv .srv.ico");
-    await p.click('#cinema .cin-srv [data-act="ss-open"]');
+    await p.click('#cinema [data-act="cin-srcs"]');
+    await p.click('#cinema .cin-srcs [data-act="ss-open"]');
     await p.waitForTimeout(300);
     ok(
-        '+ opens "add a server for this series", on top of the player',
+        '"Add a server for this series" opens on top of the player',
         await ev(() => {
             const m = document.querySelector("#overlay .modal #ss-in");
             if (!m) return false;
@@ -155,25 +155,28 @@ import { ok, evaluator, listen } from "./helpers.ts";
         })
     );
     await ev(() => __ulTest.closeModal());
-    // a server arriving later joins the bar without restarting the video
+    // a server arriving later joins the list without restarting the video
     await ev(() => {
         window.__kept = new WeakSet([document.querySelector("#cinema video")!]);
         __ulTest.W.player!.looking = 1;
         __ulTest.srvRefresh(__ulTest.W.player!);
     });
-    ok("while still checking, the bar says so", await ev(() => !!document.querySelector("#cinema .cin-srv .srv.wait")));
+    ok(
+        "while still checking, the button says so",
+        await ev(() => !!document.querySelector('#cinema [data-act="cin-srcs"] .dots'))
+    );
     await ev(a => {
         __ulTest.W.player!.looking = 0;
         __ulTest.W.player!.srcs.push({ name: "Late one", url: a + "?c=1" });
         __ulTest.srvRefresh(__ulTest.W.player!);
     }, U("a.webm"));
     ok(
-        "a late server joins as 3 without restarting what plays",
+        "a late server joins as the third without restarting what plays",
         await ev(
             () =>
-                document.querySelectorAll('#cinema [data-act="cin-src-pick"]').length === 3 &&
+                document.querySelector('#cinema [data-act="cin-srcs"] .srvn')!.textContent === "3" &&
                 window.__kept.has(document.querySelector("#cinema video")!) &&
-                !document.querySelector("#cinema .srv.wait")
+                !document.querySelector('#cinema [data-act="cin-srcs"] .dots')
         )
     );
 
@@ -181,7 +184,7 @@ import { ok, evaluator, listen } from "./helpers.ts";
     await p.click('#cinema .cin-head [data-act="open"]');
     await p.waitForTimeout(400);
     ok(
-        '"Open its card" opens this show\'s card, on top',
+        "clicking the show's name opens its card, on top",
         await ev(
             i =>
                 __ulTest.ui.modal &&
@@ -212,6 +215,7 @@ import { ok, evaluator, listen } from "./helpers.ts";
     await play({ id: did, title: "Done Show", e: 2 });
     await ready();
     ok("a finished show shows its episodes as watched", await ev(() => __ulTest.W.player!.marked === true));
+    await p.click('#cinema [data-act="cin-opts"]');
     await p.click('#cinema [data-act="cin-mark"]');
     await p.waitForTimeout(300);
     const st = await ev(

@@ -1,59 +1,35 @@
 <!--
     src/features/learning-centre/pages/CurriculaPage.svelte
     ─────────────────────────────────────────────────────────────────
-      The Learning Centre's Curricula tab: what different programmes teach in one course, side by side. The course
-      (ui.uniSub, or the first with programmes), the programmes you compare (each can be left out of the table or
-      removed), pasting or fetching another, the topics, and then the merged table (CurTable) or each programme's
-      modules side by side (ui.uniView). The course's Curricula is copied here each time anything changes, as the
-      older code changes it in place; the parts below save to the real thing (curS).
+      The Learning Centre's Curricula tab, for the current course: each programme it was built from, side by side, as
+      modules → the topics each teaches → its reading list (title, author, and whether it's in your course). "Use this
+      reading list" puts a module's books into the course (uni-use); modules with no reading list of their own are
+      listed under it. A programme can be fetched again, removed, or added from a university's page (uni-fetch).
     ─────────────────────────────────────────────────────────────────
 -->
 
 <script lang="ts">
     import { store } from "../../core/store.svelte";
-    import { clone, markDirty, ticked } from "../../core/core";
     import HiddenNote from "../../core/page/HiddenNote.svelte";
-    import { curS, curSid, uniData } from "../learning-curricula";
-    import { ACS } from "../learning";
-    import { courseName, curCourses, progAbbr } from "./look";
-    import CurTopics from "./CurTopics.svelte";
-    import CurPaste from "./CurPaste.svelte";
-    import CurTable from "./CurTable.svelte";
+    import { lcCur } from "../learning";
+    import { curriculaLook } from "./look";
+    import LcHead from "./LcHead.svelte";
 
     const v = $derived.by(() => {
-        void store.itemsByFrame; // your library, taken in once a frame
+        void store.itemsByFrame;
         void store.meta;
-        const u = store.ui,
-            sid = curSid();
-        if (!sid) return null;
-        const L = curCourses(),
-            cur = ACS().curricula || {},
-            { S, books } = uniData(sid);
-        return {
-            sid,
-            name: courseName(sid),
-            chips: L.map(s => ({ id: s.id, name: s.name, n: (cur[s.id]?.progs || []).length })),
-            S: clone(S),
-            books: clone(books),
-            view: u.uniView || "merged",
-            paste: !!u.uniPaste,
-            topics: !!u.uniTopics,
-        };
+        void store.ui;
+        const C = lcCur();
+        return C ? { id: C.id, name: C.name, P: curriculaLook(C) } : null;
     });
-    const progs = $derived(v ? v.S.progs : []),
-        shown = $derived(v ? progs.filter(p => !v.S.hide.includes(p.id)) : []);
-
-    function hide(id: string, box: HTMLInputElement) {
-        if (!v) return;
-        const S = curS(v.sid);
-        S.hide = ticked(box) ? S.hide.filter(x => x !== id) : [...new Set([...S.hide, id])];
-        markDirty();
-    }
 </script>
 
 <HiddenNote />
-{#if !v}<div class="empty"><p>Add a course first.</p><p class="hint">Curricula compares what different programmes teach in one course, topic by topic.</p><button class="btn gold" data-act="tab" data-k="learn">Go to Courses</button></div>{:else}<div class="curr"><div class="unihead"><div class="chips">{#each v.chips as s, i (i + s.id)}<button class="chip" data-act="uni-sub" data-k={s.id} aria-pressed={s.id === v.sid}>{s.n ? s.name + " " : s.name}{#if s.n}<small>{s.n}</small>{/if}</button>{/each}</div><span class="spacer"></span>
-        {#if progs.length}<div class="seg">{#each [["merged", "Merged"], ["side", "Side by side"]] as [k, l] (k)}<button data-act="uni-view" data-k={k} aria-pressed={v.view === k}>{l}</button>{/each}</div>{/if}
-        <button class="btn sm" data-act="uni-paste">+ Paste a programme</button><button class="btn sm gold" data-act="uni-fetch" data-k={v.sid}>Fetch a programme…</button></div>
-    {#if progs.length}<div class="uniprogs">{#each progs as p, i (i + p.id)}<label class="uniprog {p.kind || ''}{v.S.hide.includes(p.id) ? ' off' : ''}"><input type="checkbox" data-unihide={p.id} checked={!v.S.hide.includes(p.id)} onchange={e => hide(p.id, e.currentTarget)}><span class="ua">{progAbbr(progs, p)}</span><span title={p.why || ""}><b>{p.uni || ""}</b> {p.name}<small>{p.kind === "specialist" ? "Specialist · " : ""}{p.why || ""}</small></span><button class="linkbtn" data-act="uni-del" data-k={p.id} aria-label="Remove {p.name}">remove</button></label>{/each}</div>{/if}
-    {#if v.paste}<CurPaste sid={v.sid} />{/if}{#if v.topics || !v.S.topics.length || !progs.length}<CurTopics sid={v.sid} S={v.S} />{:else}<p class="hint"><button class="linkbtn" data-act="uni-topics">Edit topics ({v.S.topics.length})</button></p>{/if}{#if !progs.length}<div class="empty"><p>Nothing compared in {v.name || "this course"} yet.</p><p class="hint">Add the topics you care about (or let the first programme you add create them), then add programmes: paste a module list, or fetch it from a university's page. Each module is matched to topics by name, and books set for it come with it.</p></div>{:else if v.view === "side"}<div class="uniside">{#each shown as p, i (i + p.id)}<section class="panel"><h3>{p.uni || ""} <small class="hint">{p.name}</small></h3>{#each p.modules as m, j (j)}<div class="unimod"><b>{m.core ? "★ " + m.name : m.name}</b><small>{(m.books || []).map(k => { const bk = v.books[Array.isArray(k) ? k[0] : k]; return bk ? bk[0] : ""; }).filter(Boolean).join(" · ")}</small></div>{/each}</section>{/each}</div>{:else}<CurTable sid={v.sid} S={v.S} {shown} abbr={p => progAbbr(progs, p)} books={v.books} />{/if}</div>{/if}
+<LcHead cur={v ? v.id : ""} hub={false} />
+{#if !v}<div class="empty"><p>Add a course first.</p><p class="hint">Curricula shows the programmes a course was built from: their modules, the topics each teaches, and their reading lists.</p><button class="btn gold" data-act="lc-new" data-k="">+ New course</button></div>{:else}<div class="curr"><div class="unihead"><h2 class="ltitle">Curricula <span class="hint">for {v.name}</span></h2><span class="spacer"></span><button class="btn sm" data-act="uni-fetch">Fetch a programme…</button></div>
+    {#if !v.P.length}<div class="empty"><p>No programmes in {v.name} yet.</p><p class="hint">"Fetch more" on the course adds the programmes that teach a subject or topic; "Fetch a programme" reads one from a university's page.</p></div>{:else}<div class="cuprogs">{#each v.P as p (p.id)}{@const withList = p.modules.filter(m => m.books.length)}{@const rest = p.modules.filter(m => !m.books.length)}<section class="panel cuprog"><div class="cuph"><div><b>{p.uni}</b><span>{p.name}</span></div><button class="linkbtn" data-act="uni-del" data-k={p.id} aria-label="Remove {p.uni} {p.name}">remove</button></div>
+            <small class="lcfs {p.state.cls}">{#if p.state.cls === "busy"}<span class="spin"></span>{/if}{p.state.t}{#if p.href} · <a class="link" href={p.href} target="_blank" rel="noopener noreferrer">its page ↗</a>{/if}{#if p.src} · <a class="link" href={p.src} target="_blank" rel="noopener noreferrer">reading lists ↗</a>{/if}{#if p.canFetch && p.state.cls !== "busy"} · <button class="linkbtn" data-act="uni-again" data-k={p.id}>Fetch again</button>{/if}</small>
+            {#each withList as m (m.i)}<div class="cumod"><div class="cumh"><b>{m.code ? m.code + " " : ""}{m.name}</b><small>{m.lvl}{m.core === false ? " · option" : ""}</small></div>{#if m.topics.length}<div class="cutops">{#each m.topics as t, ti (ti)}<span class="chip">{t}</span>{/each}</div>{/if}
+                <ol class="culist">{#each m.books as b, j (j + b.t)}<li class={b.inCourse ? "in" : ""}><b>{b.t}</b> <small>{b.a}</small>{#if b.inCourse}<i>in your course</i>{/if}</li>{/each}</ol>
+                <div class="bar"><button class="btn sm{m.all ? ' ghost' : ''}" data-act="uni-use" data-k={p.id} data-m={m.i} disabled={m.all}>{m.all ? "All in your course" : "Use this reading list"}</button>{#if m.list}<a class="link" href={m.list} target="_blank" rel="noopener noreferrer">the list ↗</a>{/if}</div></div>{/each}
+            {#if rest.length}<details class="curest" open={!withList.length}><summary class="hint">{withList.length ? `${rest.length} more modules with no reading list here` : `${rest.length} modules (no reading lists here yet)`}</summary><ul>{#each rest as m (m.i)}<li><b>{m.code ? m.code + " " : ""}{m.name}</b>{#if m.topics.length} <small>{m.topics.join(", ")}</small>{/if}</li>{/each}</ul></details>{/if}</section>{/each}</div>{/if}</div>{/if}

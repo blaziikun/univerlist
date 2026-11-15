@@ -1,0 +1,1171 @@
+// src/styles/layers/_player.scss
+// ─────────────────────────────────────────────────────────────────
+//  The player (#cinema.plr, watch-read/player/): a page laid out like a streaming site's
+//
+//  A top bar, the player (the video, what's over it, its controls and their panels: what full screen takes along),
+//  a line under it, and the blocks under it or beside it. Cinema mode makes the player as big as the window, with the
+//  blocks below. The lights darken everything but the player. On a phone: the player edge to edge, fewer controls,
+//  big buttons for a thumb, and panels that rise from the bottom. Themed by Watch & read's own look (black unless you
+//  chose otherwise); what's drawn over the picture is always light on dark.
+// ─────────────────────────────────────────────────────────────────
+
+#cinema.plr {
+    --pad: 24px;
+    position: fixed;
+    inset: 0;
+    z-index: 120;
+    display: block;
+    overflow: auto;
+    overscroll-behavior: contain;
+    background: var(--bg);
+    color: var(--text);
+    animation: fadein 0.25s;
+}
+
+// ── the top bar: Back, the show (its card), the servers, this page's settings ──
+.plr .cin-head {
+    position: sticky;
+    top: 0;
+    z-index: 7;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px var(--pad);
+    background: color-mix(in srgb, var(--bg) 86%, transparent);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+}
+.plr .cin-head .spacer,
+.plr .cin-under .spacer,
+.plr .pc .spacer {
+    flex: 1;
+}
+.plr .cin-head .cb,
+.plr .cin-under .cb {
+    width: 40px;
+    min-width: 40px;
+    height: 40px;
+    padding: 0;
+    border: 0;
+    border-radius: 50%;
+    background: color-mix(in srgb, var(--text) 8%, transparent);
+    color: var(--text);
+    font-size: 19px;
+}
+.plr .cin-head .cb:hover,
+.plr .cin-under .cb:hover {
+    background: color-mix(in srgb, var(--text) 16%, transparent);
+}
+.plr .cin-head .cb.wide {
+    width: auto;
+    padding: 0 14px;
+    border-radius: 999px;
+    font-size: 12.5px;
+}
+.plr .cin-head .cb[aria-expanded="true"] {
+    background: var(--accent);
+    color: var(--on-accent);
+}
+.plr .cin-name {
+    min-width: 0;
+    overflow: hidden;
+    padding: 4px 8px;
+    border: 0;
+    border-radius: 8px;
+    background: none;
+    color: var(--text);
+    font: var(--w-head, 600) 19px var(--f-head);
+    letter-spacing: var(--ls-head);
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}
+.plr button.cin-name {
+    cursor: pointer;
+}
+.plr button.cin-name:hover {
+    background: color-mix(in srgb, var(--text) 8%, transparent);
+}
+.plr .cin-hbtn {
+    position: relative;
+    display: inline-flex;
+}
+.plr .srvbtn {
+    position: relative;
+}
+.plr .srvn {
+    position: absolute;
+    top: 1px;
+    right: 1px;
+    min-width: 16px;
+    height: 16px;
+    padding: 0 4px;
+    border-radius: 8px;
+    background: var(--accent);
+    color: var(--on-accent);
+    font: 700 10px/16px var(--f-ui);
+}
+.plr .srvbtn .dots {
+    position: absolute;
+    bottom: 5px;
+    left: 50%;
+    width: 14px;
+    height: 4px;
+    margin-left: -7px;
+    background: radial-gradient(circle, currentColor 1.4px, transparent 1.8px) 0 0 / 5px 4px repeat-x;
+    animation: plrdots 1s steps(3) infinite;
+}
+@keyframes plrdots {
+    from {
+        clip-path: inset(0 66% 0 0);
+    }
+    to {
+        clip-path: inset(0 -10% 0 0);
+    }
+}
+
+// ── the page: the player and the blocks under it, or beside it on either side ──
+.plr .cin-body {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 22px;
+    max-width: 1320px;
+    margin: 0 auto;
+    padding: 0 var(--pad) 40px;
+}
+.plr.hasside .cin-body {
+    grid-template-columns: minmax(0, 1fr) 360px;
+    max-width: 1680px;
+}
+.plr.hasleft .cin-body {
+    grid-template-columns: 340px minmax(0, 1fr);
+    max-width: 1680px;
+}
+.plr.hasleft.hasside .cin-body {
+    grid-template-columns: 300px minmax(0, 1fr) 300px;
+}
+.plr .cin-col {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    min-width: 0;
+}
+.plr .cin-side {
+    position: sticky;
+    top: 76px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    align-self: start;
+    max-height: calc(100vh - 92px);
+    overflow: auto;
+}
+.plr .cin-mb {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+// ── the player itself: everything full screen takes along ──
+.plr .cin-main {
+    position: relative;
+    z-index: 6;
+    width: min(100%, calc((100vh - 150px) * 16 / 9));
+    margin: 0 auto;
+    aspect-ratio: 16 / 9;
+    overflow: hidden;
+    border-radius: 12px;
+    background: #000;
+    color: #fff;
+}
+.plr .cin-main:fullscreen {
+    width: 100%;
+    height: 100%;
+    aspect-ratio: auto;
+    border-radius: 0;
+}
+.plr .cin-main:-webkit-full-screen {
+    width: 100%;
+    height: 100%;
+    aspect-ratio: auto;
+    border-radius: 0;
+}
+.plr .cin-stage {
+    position: absolute;
+    inset: 0;
+    display: block;
+}
+.plr .cin-stage video,
+.plr .cin-stage iframe {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    max-height: none;
+    border: 0;
+    background: #000;
+}
+.plr.idle .cin-stage {
+    cursor: none;
+}
+
+// cinema mode: the player as big as the window, the blocks below
+.plr.cinema .cin-body {
+    grid-template-columns: minmax(0, 1fr) !important;
+    max-width: none;
+    padding: 0 0 40px;
+}
+.plr.cinema .cin-main {
+    width: 100%;
+    height: calc(100vh - 64px);
+    aspect-ratio: auto;
+    border-radius: 0;
+}
+.plr.cinema .cin-col > :not(.cin-main),
+.plr.cinema .cin-side {
+    width: 100%;
+    max-width: 1320px;
+    margin: 0 auto;
+    padding: 0 var(--pad);
+    box-sizing: border-box;
+}
+.plr.cinema .cin-side {
+    position: static;
+    max-height: none;
+    overflow: visible;
+}
+.plr.cinema .cin-side.left {
+    order: 2;
+}
+
+// the lights: everything but the player goes dark (a click on the dark turns them back on)
+.plr .cin-dark {
+    position: fixed;
+    inset: 0;
+    z-index: 5;
+    background: rgba(0, 0, 0, 0.94);
+    cursor: pointer;
+    animation: fadein 0.35s;
+}
+.plr.lights .cin-head {
+    z-index: 4;
+}
+.plr.lights .cin-main {
+    box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.04), 0 0 120px rgba(0, 0, 0, 1);
+}
+
+// ── over the picture ──
+.plr .pc-subtext {
+    position: absolute;
+    left: 5%;
+    right: 5%;
+    bottom: calc(5% + var(--sub-pos, 0) * 1.4em);
+    z-index: 2;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.12em;
+    color: #fff;
+    font: 500 calc(clamp(15px, 2.1vw, 34px) * var(--sub-scale, 1)) / 1.3 var(--f-ui);
+    text-align: center;
+    pointer-events: none;
+    transition: bottom 0.2s;
+}
+.plr .pc-subtext[hidden] {
+    display: none;
+}
+.plr .pc-subtext .ln {
+    padding: 0.06em 0.45em;
+    border-radius: 0.2em;
+    background: rgba(0, 0, 0, var(--sub-bg, 0.55));
+    text-shadow: 0 0 4px rgba(0, 0, 0, 0.7);
+    white-space: pre-line;
+}
+.plr:not(.idle) .pc-subtext {
+    bottom: calc(max(5%, 92px) + var(--sub-pos, 0) * 1.4em);
+}
+.plr .cin-main:fullscreen .pc-subtext {
+    font-size: calc(clamp(18px, 3vw, 52px) * var(--sub-scale, 1));
+}
+.plr .cin-main:-webkit-full-screen .pc-subtext {
+    font-size: calc(clamp(18px, 3vw, 52px) * var(--sub-scale, 1));
+}
+// the jumps: small and faint at the sides on a computer, big in the middle on a phone (with play)
+.plr .pc-mid {
+    position: absolute;
+    inset: 0 0 76px;
+    z-index: 3;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 3%;
+    pointer-events: none;
+    transition: opacity 0.25s;
+}
+.plr .pc-mid .cb {
+    position: relative;
+    width: 50px;
+    min-width: 50px;
+    height: 50px;
+    padding: 0;
+    border: 0;
+    border-radius: 50%;
+    background: rgba(0, 0, 0, 0.28);
+    color: #fff;
+    font-size: 32px;
+    opacity: 0.4;
+    pointer-events: auto;
+    transition: opacity 0.15s, background 0.15s;
+}
+.plr .pc-mid .cb:hover,
+.plr .pc-mid .cb:focus-visible {
+    background: rgba(0, 0, 0, 0.5);
+    opacity: 0.95;
+}
+.plr .pc-bigplay {
+    display: none !important;
+}
+.plr .pc-jump .n,
+.plr .pc-flash .n {
+    position: absolute;
+    inset: 0;
+    display: grid;
+    place-items: center;
+    padding-top: 0.06em;
+    font: 700 0.34em var(--f-ui);
+}
+.plr .pc-flash {
+    position: absolute;
+    top: 50%;
+    z-index: 3;
+    width: 1em;
+    height: 1em;
+    margin-top: -0.5em;
+    color: #fff;
+    font-size: 54px;
+    opacity: 0;
+    pointer-events: none;
+    filter: drop-shadow(0 2px 8px rgba(0, 0, 0, 0.6));
+}
+.plr .pc-flash.back {
+    left: 14%;
+}
+.plr .pc-flash.fwd {
+    right: 14%;
+}
+.plr .pc-flash.go {
+    animation: plrflash 0.6s ease-out;
+}
+@keyframes plrflash {
+    0% {
+        opacity: 0;
+        transform: scale(0.8);
+    }
+    25% {
+        opacity: 0.95;
+        transform: scale(1);
+    }
+    100% {
+        opacity: 0;
+        transform: scale(1.1);
+    }
+}
+.plr .cin-net {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    z-index: 5;
+    padding: 4px 10px;
+    border-radius: 999px;
+    background: rgba(0, 0, 0, 0.55);
+    color: #eee;
+    font-size: 12px;
+    font-variant-numeric: tabular-nums;
+    pointer-events: none;
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    transition: opacity 0.3s;
+}
+.plr.idle .cin-net {
+    opacity: 0;
+}
+.plr .cin-hold {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    z-index: 6;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    align-items: center;
+    min-width: 240px;
+    max-width: min(380px, calc(100% - 32px));
+    padding: 16px 18px;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: var(--r);
+    background: rgba(18, 18, 20, 0.88);
+    color: #eee;
+    text-align: center;
+    transform: translate(-50%, -50%);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+}
+.plr .cin-hold[hidden],
+.plr .cin-net[hidden] {
+    display: none;
+}
+.plr .cin-hold p {
+    margin: 0;
+}
+.plr .cin-hold .bar {
+    display: flex;
+    gap: 8px;
+}
+.plr .pc-chip {
+    position: absolute;
+    bottom: 96px;
+    left: 16px;
+    z-index: 5;
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    padding: 6px 12px;
+    border-radius: 999px;
+    background: rgba(18, 18, 20, 0.85);
+    color: #eee;
+    font-size: 13px;
+    animation: fadein 0.2s;
+}
+.plr .pc-chip .linkbtn {
+    color: #fff;
+    text-decoration: underline;
+}
+// Skip intro: bottom right, over the controls, only while the opening plays
+.plr .pc-skipintro {
+    position: absolute;
+    right: 22px;
+    bottom: 92px;
+    z-index: 5;
+    padding: 11px 20px;
+    border: 1px solid rgba(255, 255, 255, 0.7);
+    border-radius: 6px;
+    background: rgba(24, 24, 26, 0.72);
+    color: #fff;
+    font: 600 15px var(--f-ui);
+    cursor: pointer;
+    animation: fadein 0.25s;
+    transition: bottom 0.25s, background 0.15s;
+}
+.plr .pc-skipintro:hover,
+.plr .pc-skipintro:focus-visible {
+    background: #fff;
+    color: #000;
+}
+.plr.idle .pc-skipintro {
+    bottom: 26px;
+}
+.plr .pc-next {
+    position: absolute;
+    right: 20px;
+    bottom: 100px;
+    z-index: 6;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    width: min(320px, calc(100% - 40px));
+    padding: 14px 16px;
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    border-radius: var(--r, 12px);
+    background: rgba(18, 18, 20, 0.92);
+    color: #eee;
+    animation: fadein 0.2s;
+}
+.plr .pc-next p {
+    margin: 0;
+}
+.plr .pc-next .bar {
+    display: flex;
+    gap: 8px;
+    margin-top: 4px;
+}
+.plr .pc-cd {
+    opacity: 0.8;
+    font-variant-numeric: tabular-nums;
+}
+.plr .cin-err {
+    z-index: 6;
+}
+.plr .cin-empty {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #0a0a0b;
+}
+.plr .ce-in {
+    position: relative;
+    max-width: 520px;
+    padding: 20px 20px 70px;
+    color: #eee;
+    text-align: center;
+}
+.plr .ce-in .hint {
+    color: rgba(255, 255, 255, 0.6) !important;
+}
+.plr .ce-a {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    justify-content: center;
+    margin-top: 14px;
+}
+.plr .ce-a .btn:not(.gold) {
+    border-color: rgba(255, 255, 255, 0.25);
+    background: rgba(255, 255, 255, 0.08);
+    color: #eee;
+}
+
+// ── the controls ──
+.plr .pc {
+    position: absolute;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    z-index: 4;
+    padding: 44px 14px 8px;
+    background: linear-gradient(0deg, rgba(0, 0, 0, 0.78) 0%, rgba(0, 0, 0, 0.38) 55%, rgba(0, 0, 0, 0) 100%);
+    color: #fff;
+    font-size: 15px;
+    transition: opacity 0.25s;
+}
+.plr.empty .pc {
+    padding-top: 0;
+    background: none;
+}
+.plr.idle .pc,
+.plr.idle .pc-mid {
+    opacity: 0;
+    pointer-events: none;
+}
+.plr.idle .pc * {
+    pointer-events: none;
+}
+.plr .pc-row {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    min-height: 44px;
+}
+.plr .pc .cb {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 42px;
+    min-width: 42px;
+    height: 42px;
+    padding: 0;
+    border: 0;
+    border-radius: 10px;
+    background: transparent;
+    color: #fff;
+    font-size: 23px;
+    cursor: pointer;
+}
+.plr .pc .cb:hover {
+    background: rgba(255, 255, 255, 0.14);
+}
+.plr .pc .cb:focus-visible,
+.plr .pc-mid .cb:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 1px;
+}
+.plr .pc .cb[aria-expanded="true"] {
+    background: rgba(255, 255, 255, 0.18);
+}
+.plr .pc-play {
+    font-size: 26px !important;
+}
+.plr .pc-cc {
+    font: 800 13px var(--f-ui) !important;
+    letter-spacing: 0.04em;
+}
+.plr .pc-cc.on {
+    box-shadow: inset 0 -3px 0 -0.5px var(--accent);
+}
+.plr .i-pause,
+.plr .i-off {
+    display: none;
+}
+.plr [data-on="1"] > .i-play,
+.plr .pc-mute:not([data-on="1"]) > .i-on {
+    display: none;
+}
+.plr [data-on="1"] > .i-pause,
+.plr .pc-mute:not([data-on="1"]) > .i-off {
+    display: inline-flex;
+}
+.plr .i-play,
+.plr .i-on {
+    display: inline-flex;
+}
+.plr .pc-time {
+    padding: 0 8px 0 0;
+    font-size: 13.5px;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+    opacity: 0.95;
+}
+.plr .pc-vol {
+    display: inline-flex;
+    align-items: center;
+}
+.plr .pc-volr {
+    width: 0;
+    opacity: 0;
+    accent-color: #fff;
+    transition: width 0.2s, opacity 0.2s;
+}
+.plr .pc-vol:hover .pc-volr,
+.plr .pc-vol:focus-within .pc-volr {
+    width: 84px;
+    opacity: 1;
+}
+.plr .pc-scrub {
+    position: relative;
+    height: 16px;
+    margin: 0 6px 2px;
+    cursor: pointer;
+    touch-action: none;
+}
+.plr .pc-scrub::before,
+.plr .pc-buf,
+.plr .pc-done {
+    content: "";
+    position: absolute;
+    top: 6px;
+    left: 0;
+    height: 4px;
+    border-radius: 2px;
+    transition: top 0.12s, height 0.12s;
+}
+.plr .pc-scrub::before {
+    right: 0;
+    background: rgba(255, 255, 255, 0.24);
+}
+.plr .pc-buf {
+    background: rgba(255, 255, 255, 0.42);
+}
+.plr .pc-done {
+    background: var(--accent);
+}
+.plr .pc-scrub:hover::before,
+.plr .pc-scrub:hover .pc-buf,
+.plr .pc-scrub:hover .pc-done {
+    top: 5px;
+    height: 6px;
+}
+.plr .pc-knob {
+    position: absolute;
+    top: 2px;
+    left: 0;
+    width: 12px;
+    height: 12px;
+    margin-left: -6px;
+    border-radius: 50%;
+    background: var(--accent);
+    transform: scale(0);
+    transition: transform 0.12s;
+}
+.plr .pc-scrub:hover .pc-knob,
+.plr .pc-scrub:focus-visible .pc-knob {
+    transform: scale(1);
+}
+.plr .pc-scrub:focus-visible {
+    border-radius: 4px;
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+}
+.plr .pc-tip {
+    position: absolute;
+    bottom: 18px;
+    padding: 2px 7px;
+    border-radius: 5px;
+    background: rgba(0, 0, 0, 0.85);
+    font-size: 12px;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+    transform: translateX(-50%);
+    pointer-events: none;
+}
+
+// ── the panels: the player's (over the picture, dark like it) and the page's (under the top bar) ──
+.plr .cin-pop {
+    position: absolute;
+    z-index: 8;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    width: min(360px, calc(100vw - 24px));
+    max-height: min(72vh, 560px);
+    overflow: auto;
+    padding: 14px 16px;
+    border: 1px solid var(--line2);
+    border-radius: 14px;
+    background: var(--panel);
+    color: var(--text);
+    font-size: 13px;
+    text-align: left;
+    box-shadow: 0 24px 60px rgba(0, 0, 0, 0.5);
+}
+.plr .cin-hbtn .cin-pop {
+    top: calc(100% + 8px);
+    right: 0;
+}
+.plr .cin-main .cin-pop {
+    top: auto;
+    right: 12px;
+    bottom: 62px;
+    max-height: calc(100% - 74px);
+    border-color: rgba(255, 255, 255, 0.14) !important;
+    background: rgba(22, 22, 24, 0.94) !important;
+    color: #eee;
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+}
+.plr .cin-main .cin-pop .hint {
+    color: rgba(255, 255, 255, 0.55) !important;
+}
+.plr .cin-pop .ilab {
+    margin: 0;
+}
+.plr .cin-pop .ctl {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    color: inherit;
+}
+.plr .cin-pop .ctl.rng {
+    display: grid;
+    grid-template-columns: 78px 1fr 46px;
+}
+.plr .cin-pop .ctl.rng output {
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+    opacity: 0.8;
+}
+.plr .cin-pop input[type="range"] {
+    accent-color: var(--accent);
+}
+.plr .cin-pop .inp {
+    width: 58px;
+    height: 30px;
+    padding: 0 8px;
+}
+.plr .cin-main .cin-pop .inp,
+.plr .cin-main .cin-pop .sel {
+    border-color: rgba(255, 255, 255, 0.16);
+    background: rgba(255, 255, 255, 0.08);
+    color: #fff;
+}
+.plr .cin-pop .po-row,
+.plr .cin-pop .wpo {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 6px 8px;
+}
+.plr .cin-pop .po-row > span,
+.plr .cin-pop .wpo > span {
+    flex: 1;
+    opacity: 0.8;
+}
+.plr .cin-pop .po-a {
+    display: flex;
+    gap: 6px;
+}
+.plr .cin-pop .po-row > .po-a {
+    flex: none;
+    align-items: center;
+    opacity: 1;
+}
+.plr .cin-pop .seg.sm button {
+    padding: 4px 9px;
+    font-size: 12px;
+}
+.plr .cin-main .cin-pop .seg {
+    border-color: rgba(255, 255, 255, 0.16);
+    background: rgba(255, 255, 255, 0.06);
+}
+.plr .cin-main .cin-pop .seg button {
+    color: #ddd;
+}
+.plr .cin-main .cin-pop .chip {
+    border-color: rgba(255, 255, 255, 0.2);
+    background: rgba(255, 255, 255, 0.06);
+    color: #eee;
+}
+.plr .cin-pop .keys {
+    margin: 2px 0 0;
+    font-size: 11.5px;
+    line-height: 1.5;
+}
+.plr .cin-pop .linkbtn {
+    align-self: flex-start;
+}
+.plr .cin-pop.wpopts {
+    width: min(430px, calc(100vw - 24px));
+}
+.plr .wpopts .wpo {
+    flex-wrap: nowrap;
+}
+.plr .wpopts .cb.mv {
+    width: 28px;
+    min-width: 28px;
+    height: 28px;
+    border-radius: 7px;
+    font-size: 13px;
+}
+.plr .wpopts .cb.mv:disabled {
+    opacity: 0.3;
+}
+.plr .wpo-ticks {
+    display: flex;
+    gap: 14px;
+}
+.plr .cc-tracks {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+.plr .cin-pop .srcrow[aria-pressed="true"] .dot {
+    background: var(--accent);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 30%, transparent);
+}
+.plr .cin-pop .srcrow {
+    border-color: color-mix(in srgb, currentColor 10%, transparent);
+    background: color-mix(in srgb, currentColor 4%, transparent);
+    color: inherit;
+}
+.plr .cin-pop .srcrow:hover {
+    background: color-mix(in srgb, currentColor 10%, transparent);
+}
+.plr .cin-pop .srcrow .sn small {
+    color: inherit;
+    opacity: 0.6;
+}
+.plr .srcrow .sn small.srvname {
+    display: block;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}
+
+// ── under the player: the episode, and the lights ──
+.plr .cin-under {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 40px;
+}
+.plr .cin-ep {
+    min-width: 0;
+    overflow: hidden;
+    color: var(--muted);
+    font-size: 14px;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}
+
+// ── the blocks: the seasons with their episodes, the description ──
+.plr .cblk {
+    padding: 14px 16px 16px;
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    background: var(--panel);
+}
+.plr .cs-epsh {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 10px;
+}
+.plr .cs-h3 {
+    min-width: 0;
+    margin: 0;
+    overflow: hidden;
+    font: var(--w-head, 600) 17px var(--f-head);
+    letter-spacing: var(--ls-head);
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}
+.plr .cs-h3 .nm {
+    color: var(--muted);
+}
+.plr .cs-at {
+    flex: none;
+    color: var(--muted);
+    font: 600 13px var(--f-mono);
+}
+.plr .cs-seasons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: 12px;
+}
+.plr .cs-seasons .chip {
+    max-width: 100%;
+    overflow: hidden;
+    font-size: 12.5px;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}
+.plr .cs-sel {
+    width: 100%;
+    max-width: 440px;
+}
+.plr .cs-eps.numbers {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(48px, 1fr));
+    gap: 6px;
+}
+.plr .cs-num {
+    height: 40px;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: color-mix(in srgb, var(--text) 4%, transparent);
+    color: var(--text);
+    font: 500 13px var(--f-mono);
+    cursor: pointer;
+}
+.plr .cs-num:hover {
+    border-color: var(--line2);
+}
+.plr .cs-num.seen {
+    background: none;
+    color: var(--faint);
+}
+.plr .cs-num.part {
+    box-shadow: inset 0 -3px 0 color-mix(in srgb, var(--accent) 70%, transparent);
+}
+.plr .cs-num.on {
+    border-color: var(--accent);
+    background: var(--accent);
+    color: var(--on-accent);
+}
+.plr .cs-eps.detailed {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 6px;
+}
+.plr .cin-side .cs-eps.detailed {
+    grid-template-columns: minmax(0, 1fr);
+}
+.plr .cs-ep2 {
+    display: grid;
+    grid-template-columns: auto 24px minmax(0, 1fr) auto;
+    gap: 10px;
+    align-items: center;
+    width: 100%;
+    padding: 7px;
+    border: 0;
+    border-radius: 8px;
+    background: none;
+    color: var(--text);
+    text-align: left;
+    cursor: pointer;
+}
+.plr .cs-ep2:hover {
+    background: color-mix(in srgb, var(--text) 6%, transparent);
+}
+.plr .cs-ep2.on {
+    background: color-mix(in srgb, var(--accent) 20%, transparent);
+}
+.plr .cs-ep2 img {
+    width: 112px;
+    aspect-ratio: 16 / 9;
+    border-radius: 6px;
+    background: var(--panel3);
+    object-fit: cover;
+}
+.plr .cs-ep2:not(:has(img)) {
+    grid-template-columns: 24px minmax(0, 1fr) auto;
+}
+.plr .cs-ep2 .n {
+    color: var(--muted);
+    font: 500 12px var(--f-mono);
+    text-align: center;
+}
+.plr .cs-ep2 .tx {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+}
+.plr .cs-ep2 .tx b {
+    overflow: hidden;
+    font-size: 13px;
+    font-weight: 500;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}
+.plr .cs-ep2 .tx small {
+    display: -webkit-box;
+    overflow: hidden;
+    color: var(--muted);
+    font-size: 11.5px;
+    line-height: 1.4;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+}
+.plr .cs-ep2.seen .tx b {
+    color: var(--muted);
+}
+.plr .cs-ep2 .ck {
+    color: var(--good);
+    font-size: 11px;
+}
+.plr .cs-about p {
+    margin: 0 0 8px;
+    color: var(--muted);
+    font-size: 13.5px;
+    line-height: 1.6;
+}
+.plr .cs-about p:last-child {
+    margin-bottom: 0;
+}
+.plr .cs-about .cs-epname {
+    color: var(--text);
+    font: var(--w-head, 600) 16px var(--f-head);
+}
+
+// ── a phone: the player edge to edge, fewer controls, big buttons for a thumb, panels from the bottom ──
+@media (max-width: 700px) {
+    #cinema.plr {
+        --pad: 12px;
+    }
+    .plr .cin-head {
+        gap: 6px;
+        padding: 8px 10px;
+    }
+    .plr .cin-name {
+        font-size: 16.5px;
+    }
+    .plr .cin-body,
+    .plr.hasside .cin-body,
+    .plr.hasleft .cin-body {
+        grid-template-columns: minmax(0, 1fr);
+        gap: 14px;
+        padding: 0 0 32px;
+    }
+    .plr .cin-col > :not(.cin-main),
+    .plr .cin-side {
+        padding: 0 var(--pad);
+    }
+    .plr .cin-side {
+        position: static;
+        order: 2;
+        max-height: none;
+        overflow: visible;
+    }
+    .plr .cin-main,
+    .plr.cinema .cin-main {
+        width: 100%;
+        height: auto;
+        aspect-ratio: 16 / 9;
+        border-radius: 0;
+    }
+    .plr .pc {
+        padding: 30px 6px 2px;
+    }
+    .plr .pc .cb {
+        width: 40px;
+        min-width: 40px;
+        height: 40px;
+        font-size: 21px;
+    }
+    .plr .pc-time {
+        padding: 0 4px;
+        font-size: 12px;
+    }
+    .plr .pc-volr,
+    .plr .pc .pc-lay,
+    .plr .cin-under .bulb {
+        display: none;
+    }
+    .plr .cin-hbtn .cin-pop,
+    .plr .cin-main .cin-pop {
+        position: fixed;
+        top: auto;
+        right: 8px;
+        bottom: 8px;
+        left: 8px;
+        z-index: 30;
+        width: auto;
+        max-height: 64vh;
+        background: #161618 !important;
+        box-shadow: 0 -12px 40px rgba(0, 0, 0, 0.6);
+    }
+    .plr .pc-skipintro {
+        right: 10px;
+        bottom: 66px;
+        padding: 8px 14px;
+        font-size: 13.5px;
+    }
+    .plr.idle .pc-skipintro {
+        bottom: 12px;
+    }
+    .plr .pc-chip {
+        bottom: 60px;
+        left: 8px;
+        font-size: 12px;
+    }
+    .plr .pc-next {
+        right: 8px;
+        bottom: 60px;
+        width: min(280px, calc(100% - 16px));
+    }
+    .plr:not(.idle) .pc-subtext {
+        bottom: calc(66px + var(--sub-pos, 0) * 1.4em);
+    }
+    .plr .cs-eps.detailed {
+        grid-template-columns: minmax(0, 1fr);
+    }
+    .plr .cs-eps.numbers {
+        grid-template-columns: repeat(auto-fill, minmax(46px, 1fr));
+    }
+}
+// a touch screen: the jumps and play in the middle, big
+@media (hover: none) and (pointer: coarse) {
+    .plr .pc-mid {
+        inset: 0 0 50px;
+        justify-content: center;
+        gap: 9vw;
+    }
+    .plr .pc-mid .cb {
+        width: 56px;
+        min-width: 56px;
+        height: 56px;
+        font-size: 38px;
+        background: rgba(0, 0, 0, 0.35);
+        opacity: 0.95;
+    }
+    .plr .pc-bigplay {
+        display: inline-flex !important;
+        width: 66px !important;
+        min-width: 66px !important;
+        height: 66px !important;
+        font-size: 34px !important;
+    }
+    .plr .pc-volr {
+        display: none;
+    }
+}
+@media (prefers-reduced-motion: reduce) {
+    .plr .srvbtn .dots,
+    .plr .pc-flash.go {
+        animation: none;
+    }
+}

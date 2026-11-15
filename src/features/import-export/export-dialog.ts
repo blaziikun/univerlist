@@ -26,7 +26,7 @@ export function exportParts(): ExportPart[] {
         ["preferences", "Settings, layout, modes and tags", null],
         ["themes", "Themes", count(Object.keys(meta.themes || {}).length)],
         ...(meta.courses
-            ? [["academic", "The Learning Centre: courses, pathways, opportunities", null] satisfies ExportPart]
+            ? [["academic", "The Learning Centre: courses, their books and programmes", null] satisfies ExportPart]
             : []),
         ...(EXT.list.some(x => !x.private)
             ? [

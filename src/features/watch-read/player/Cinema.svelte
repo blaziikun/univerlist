@@ -1,32 +1,34 @@
 <!--
     src/features/watch-read/player/Cinema.svelte
     ─────────────────────────────────────────────────────────────────
-      The player (#cinema, over everything): docked beside the episodes (a header with the servers, the stage, the
-      buttons under it, the blocks beside or under it) or in cinema mode (the video fills the window, the buttons over
-      it); its panels (the servers, its settings, Customise this page) and, while you arrange it, the edit bar. Mounted
-      on <body> when something plays and let go when it closes (watch-read/surfaces.ts, renderPlayer in watch.ts).
-      It draws when the older code asks: renderPlayer() for a new video (CinStage is drawn afresh), playerRedraw() and
-      the smaller asks for what's around it; never while it plays. Its own: the keys (playerKey in watch.ts), the
-      controls hiding when the mouse is still, and dragging buttons between the video, under it and Hidden.
+      The player (#cinema, over everything), laid out like a streaming site's: a top bar (Back, the show's name, which
+      opens its card, the servers and this page's settings), the player itself (the video, what's drawn over it, its
+      controls and their panels: everything full screen takes along), a line under it (the episode and the lights),
+      and the blocks (the seasons with their episodes, and the description) under it, or beside it on either side.
+      Cinema mode makes the player as big as the window, with the blocks below; switching only changes the layout, so
+      the video plays on untouched (the stage is the same element in both). The lights darken everything but the
+      player. Mounted on <body> when something plays and let go when it closes (watch-read/surfaces.ts, renderPlayer
+      in watch.ts). It draws when the older code asks: renderPlayer() for a new video (CinStage is drawn afresh),
+      playerRedraw() and the smaller asks for what's around it; never while it plays. Its own: the keys (playerKey in
+      watch.ts), the controls hiding when the pointer is still, and its panels closing on a click anywhere else.
     ─────────────────────────────────────────────────────────────────
 -->
 
 <script lang="ts">
     import { onDestroy, untrack } from "svelte";
+    import Icon from "../../core/Icon.svelte";
     import { closestTo, ui } from "../../core/core";
     import { stageNews } from "../stage-state.svelte";
-    import { LOOK, lookVars, wtMove } from "../player";
-    import { playerKey, PS, W } from "../watch";
+    import { isFull, lookVars, panelsClose } from "../player";
+    import { cinLights, playerKey, PS, W } from "../watch";
     import CinBlocks from "./CinBlocks.svelte";
     import CinStage from "./CinStage.svelte";
     import Controls from "./Controls.svelte";
-    import EditBar from "./EditBar.svelte";
     import PageOpts from "./PageOpts.svelte";
     import PlayerOpts from "./PlayerOpts.svelte";
-    import ServerStrip from "./ServerStrip.svelte";
     import SourcesPanel from "./SourcesPanel.svelte";
-    import Tool from "./Tool.svelte";
-    import { blocksView, playerView, toolsAt } from "./view";
+    import SubsPanel from "./SubsPanel.svelte";
+    import { blocksView, playerView, srvButtonView } from "./view";
 
     const v = $derived.by(() => {
         void stageNews.player;
@@ -38,7 +40,12 @@
         void stageNews.player;
         return W.player ? blocksView(W.player) : null;
     });
-    const wpOpts = $derived.by(() => {
+    const srv = $derived.by(() => {
+        void stageNews.srv;
+        void stageNews.player;
+        return W.player ? srvButtonView(W.player) : null;
+    });
+    const pageOpts = $derived.by(() => {
         void stageNews.side;
         void stageNews.player;
         return !!ui.wpOpts;
@@ -51,37 +58,31 @@
     const look = $derived.by(() => {
         void stageNews.look;
         void stageNews.player;
-        return { ...lookVars(), sub: PS().subSize + "%" };
+        return lookVars();
     });
-    const edit = $derived.by(() => {
-        void stageNews.player;
-        return !!ui.wpEdit;
-    });
-    const cls = $derived(
-        v
-            ? "cin" +
-                  (v.o.hideUI ? " autohide" : "") +
-                  " lay-" +
-                  v.f.lay +
-                  (lights ? " lights" : "") +
-                  (v.f.lay === "docked" && b && !b.side.length ? " noside" : "")
-            : "cin"
-    );
-    // with the browser's own controls in cinema mode, the bar under the video holds these
-    const BOT = ["prev", "back", "fwd", "skip", "gap", "subs", "speed", "pip", "full", "mark", "next"];
+    // full screen: the button's icon, and the layout inside it
+    let full = $state(isFull());
 
-    // the controls hide when the mouse is still (not while you arrange them, nor while the player's own are paused)
+    // the controls hide when the pointer is still while it plays; on a phone a tap shows or hides them
     let idle = $state(false);
     let timer: ReturnType<typeof setTimeout> | undefined;
+    const HIDE_AFTER = 3000;
     function wake() {
         idle = false;
         clearTimeout(timer);
         timer = setTimeout(() => {
-            const vd = document.querySelector<HTMLVideoElement>("#cinema video");
-            if (!ui.wpEdit && !(vd && vd.paused && W.player?.frame?.custom)) idle = true;
-        }, LOOK().hideAfter * 1000);
+            const vd = document.querySelector<HTMLVideoElement>("#cinema video"),
+                p = W.player;
+            if (PS().hideUI && vd && !vd.paused && p && !(p.opts || p.cc || p.srcOpen)) idle = true;
+        }, HIDE_AFTER);
     }
-    // each time it's drawn the clock starts again, as it did when the HTML player was drawn
+    function sleep() {
+        clearTimeout(timer);
+        const p = W.player;
+        if (p && !(p.opts || p.cc || p.srcOpen)) idle = true;
+    }
+    const shown = () => !idle;
+    // each time it's drawn the clock starts again, as it did when the player was drawn as HTML
     $effect(() => {
         void stageNews.player;
         untrack(wake);
@@ -92,44 +93,14 @@
         if (!playerKey(e)) return;
         e.preventDefault();
         e.stopPropagation();
+        wake();
     }
-
-    // dragging buttons between the video, under it and Hidden (and into place among the others)
-    const drag = $state<{ k: string | null; zone: string | null }>({ k: null, zone: null });
-    function dragstart(e: DragEvent) {
-        const w = closestTo(e, "#cinema .wt");
-        if (!w) return;
-        drag.k = w.dataset.tool ?? null;
-        if (e.dataTransfer) {
-            e.dataTransfer.effectAllowed = "move";
-            try {
-                e.dataTransfer.setData("text/plain", drag.k || "");
-            } catch (_) {}
-        }
-    }
-    function dragend() {
-        drag.k = null;
-        drag.zone = null;
-    }
-    function dragover(e: DragEvent) {
-        const z = drag.k ? closestTo(e, "#cinema .wz") : null;
-        if (!z) return;
-        e.preventDefault();
-        drag.zone = z.dataset.zone ?? null;
-    }
-    function drop(e: DragEvent) {
-        const k = drag.k,
-            z = k ? closestTo(e, "#cinema .wz") : null;
-        if (!k || !z) return;
-        e.preventDefault();
-        const before = [...z.querySelectorAll<HTMLElement>(".wt")].find(w => {
-            const r = w.getBoundingClientRect();
-            return w.dataset.tool !== k && e.clientX < r.left + r.width / 2 && e.clientY < r.bottom;
-        });
-        dragend();
-        wtMove(k, z.dataset.zone || "", before ? before.dataset.tool || null : null);
+    // a click anywhere but on a panel, or on the button that opens it, closes the panels (as a menu closes)
+    function outside(e: PointerEvent) {
+        if (closestTo(e, "#cinema .cin-pop, #cinema [data-pop], #ctx, #overlay")) return;
+        panelsClose();
     }
 </script>
 
-<svelte:document onkeydowncapture={key} />
-{#if v}<!-- svelte-ignore a11y_no_static_element_interactions: the mouse moving anywhere over it shows the controls; dragging is for arranging buttons --><div id="cinema" data-svelte="" class={cls} class:editing={edit} class:custom={v.f.custom} class:idle style:--subsize={look.sub} style:--pl-size={look.size} style:--side-w={look.side} style:--pl-radius={look.radius} style:--ctl-scale={look.ctl} style:--pc-dim={look.dim} style:--sub-bg={look.subBg} onpointermove={wake} ondragstart={dragstart} ondragend={dragend} ondragover={dragover} ondrop={drop}>{#if v.f.lay === "docked"}<div class="cin-col"><div class="cin-head"><button class="cb" data-act="cin-close" title="Back (Esc)" aria-label="Back (Esc)">←</button><b>{v.showName}</b><span class="spacer"></span><ServerStrip />{#if v.card}<button class="cb" data-act="open" title="Open its card" aria-label="Open its card" data-id={v.card}>◫</button>{:else if v.canAdd}<button class="cb wide" data-act="watch-add" title="Add to my list">+ List</button>{/if}<button class="cb" data-act="wp-opts" title="Customise this page" aria-label="Customise this page" aria-pressed={wpOpts}>⋯</button></div>{" "}<div class="cin-main">{#key stageNews.video}<CinStage {v} {wake} />{/key}{#if v.f.custom}<Controls {v} cinema={false} {edit} {drag} />{/if}</div><div class="cin-under{v.f.custom ? ' wz' : ''}{drag.zone === 'under' ? ' over' : ''}" data-zone="under">{#each toolsAt(v, v.f.custom ? "under" : "bar") as k (k)}<Tool {k} {v} wrap={v.f.custom && edit ? "plain" : ""} dragging={drag.k === k} />{/each}</div><div class="cin-mb">{#if b}<CinBlocks {b} keys={b.main} />{/if}</div></div>{#if b && b.side.length}<aside class="cin-side"><div class="cs-body"><CinBlocks {b} keys={b.side} /></div></aside>{/if}{:else}<div class="cin-main"><div class="cin-top"><button class="cb" data-act="cin-close" title="Back (Esc)" aria-label="Back (Esc)">←</button><div class="cin-title"><b>{v.showName}</b>{#if v.epTag}<small>{v.epLine}</small>{/if}</div><span class="spacer"></span><ServerStrip /><button class="cb" data-act="cin-lay" title="Show the episode list (T)" aria-label="Show the episode list (T)">☰</button><button class="cb" data-act="cin-lights" title={lights ? "Lights on (L)" : "Lights off (L)"} aria-label={lights ? "Lights on (L)" : "Lights off (L)"} aria-pressed={lights}>{lights ? "☀" : "☾"}</button><button class="cb" data-act="cin-opts" title="Player settings" aria-label="Player settings" aria-pressed={!!v.p.opts}>⚙</button></div>{" "}{#key stageNews.video}<CinStage {v} {wake} />{/key}{#if v.f.custom}<Controls {v} cinema {edit} {drag} />{:else}<div class="cin-bot">{#each BOT as k (k)}<Tool {k} {v} />{/each}</div>{/if}</div>{/if}{#if v.p.srcOpen}<SourcesPanel p={v.p} />{/if}{" "}{#if v.p.opts}<PlayerOpts o={v.o} />{/if}{#if edit}<EditBar {drag} />{/if}{#if wpOpts}<PageOpts />{/if}</div>{/if}
+<svelte:document onkeydowncapture={key} onpointerdowncapture={outside} onfullscreenchange={() => (full = isFull())} />
+{#if v}<!-- svelte-ignore a11y_no_static_element_interactions: the pointer moving anywhere over it shows the controls --><div id="cinema" data-svelte="" class="cin plr" class:cinema={v.cinema} class:lights class:idle class:full class:empty={!v.url} class:hasleft={!!b?.left.length} class:hasside={!!b?.side.length} style:--sub-scale={look.sub} style:--sub-pos={look.subPos} style:--sub-bg={look.subBg} onpointermove={e => e.pointerType !== "touch" && wake()}>{#if lights}<!-- svelte-ignore a11y_click_events_have_key_events: L turns the lights back on too --><div class="cin-dark" onclick={() => cinLights(false)}></div>{/if}<header class="cin-head"><button class="cb back" data-act="cin-close" title="Back (Esc)" aria-label="Back (Esc)"><svg viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7" /></svg></button>{#if v.card}<button class="cin-name" data-act="open" data-id={v.card} title="Open its card">{v.showName}</button>{:else}<b class="cin-name">{v.showName}</b>{#if v.canAdd}<button class="cb wide" data-act="watch-add" title="Add to my list">+ List</button>{/if}{/if}<span class="spacer"></span>{#if srv}<span class="cin-hbtn"><button class="cb srvbtn" data-act="cin-srcs" data-pop="" aria-expanded={srv.open} aria-label={srv.title} title={srv.title}><Icon name="servers" />{#if srv.n > 1}<span class="srvn">{srv.n}</span>{/if}{#if srv.looking}<span class="dots" aria-hidden="true"></span>{/if}</button>{#if srv.open}<SourcesPanel p={v.p} />{/if}</span>{/if}<span class="cin-hbtn"><button class="cb" data-act="wp-opts" data-pop="" title="This page's settings" aria-label="This page's settings" aria-expanded={pageOpts}><Icon name="gear" /></button>{#if pageOpts}<PageOpts />{/if}</span></header><div class="cin-body">{#if b && b.left.length}<aside class="cin-side left"><CinBlocks {b} keys={b.left} /></aside>{/if}<div class="cin-col"><div class="cin-main">{#key stageNews.video}<CinStage {v} {wake} {sleep} {shown} />{/key}{#if v.f.custom || !v.url}<Controls {v} {full} />{/if}{#if v.p.opts}<PlayerOpts {v} />{/if}{#if v.p.cc}<SubsPanel p={v.p} />{/if}</div><div class="cin-under"><span class="cin-ep">{v.epLine}</span><span class="spacer"></span><button class="cb bulb" data-act="cin-lights" title={lights ? "Lights on (L)" : "Lights off (L)"} aria-label={lights ? "Lights on (L)" : "Lights off (L)"} aria-pressed={lights}><Icon name="bulb" /></button></div>{#if b && b.main.length}<div class="cin-mb"><CinBlocks {b} keys={b.main} /></div>{/if}</div>{#if b && b.side.length}<aside class="cin-side"><CinBlocks {b} keys={b.side} /></aside>{/if}</div></div>{/if}

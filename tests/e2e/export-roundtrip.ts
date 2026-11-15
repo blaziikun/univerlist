@@ -84,7 +84,7 @@ const ZIP = ENV.EXPORT,
             modes: __ulTest.meta.modes.length,
             lists: __ulTest.meta.lists.length,
             favs: __ulTest.meta.favOrder.length,
-            ac: !!(__ulTest.meta.courses && __ulTest.meta.courses.paths),
+            ac: !!(__ulTest.meta.courses && __ulTest.meta.courses.courses),
         }),
         iid
     );

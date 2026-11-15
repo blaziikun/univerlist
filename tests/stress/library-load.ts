@@ -111,7 +111,7 @@ import { ok, evaluator, listen } from "../e2e/helpers.ts";
     await ev(i => __ulTest.watchFromItem(i), bl);
     await p.waitForFunction(
         () =>
-            document.querySelectorAll("#cinema .cin-side [data-k]").length > 300 &&
+            document.querySelectorAll('#cinema [data-act="cin-ep"]').length > 300 &&
             __ulTest.W.player &&
             !__ulTest.W.player.loading,
         null,
@@ -123,8 +123,8 @@ import { ok, evaluator, listen } from "../e2e/helpers.ts";
         Date.now() -
             t0 +
             " ms, " +
-            (await ev(() => document.querySelectorAll("#cinema .cin-side [data-k]").length)) +
-            " episodes beside the player"
+            (await ev(() => document.querySelectorAll('#cinema [data-act="cin-ep"]').length)) +
+            " episodes under the player"
     );
     await ev(u => {
         __ulTest.W.player!.srcs = [{ name: "Server", url: u }];

@@ -34,6 +34,7 @@ import {
 import { renderMain } from "../core/shell";
 import { parseEp, W, watchOpen } from "./watch";
 import { OP } from "./readlibs";
+import { stageChanged } from "./stage-state.svelte";
 import type { MediaServer, ServerPick, WatchShow, WatchSource } from "../core/model";
 
 const LIB_TYPES: Record<string, string> = {
@@ -634,6 +635,7 @@ export async function libMatchShow() {
         : found.find(f => f.err)?.err || "Not found on your servers.";
     W.libMiss = !ok.length;
     if (ui.page === "watch") renderMain();
+    stageChanged("srv");
 }
 // choosing by hand when the names don't match
 /** "Not the right one?": the titles on your servers with that name, to pick from by hand (page/LibPick.svelte) */
@@ -649,6 +651,7 @@ export async function libPickOpen(q?: string) {
     };
     ui.libPick = P;
     renderMain();
+    stageChanged("srv");
     for (const l of libs) {
         try {
             for (const r of (await LIBAPI(l.type).search(l, P.q)).filter(r =>
@@ -659,6 +662,7 @@ export async function libPickOpen(q?: string) {
     }
     P.busy = false;
     renderMain();
+    stageChanged("srv");
 }
 /** "Which one is it?" (page/LibPick.svelte): what was searched, and what your servers have by that name */
 export function libPickView() {
@@ -688,6 +692,7 @@ export function libPick(i: number) {
 export function libPickClose() {
     ui.libPick = null;
     renderMain();
+    stageChanged("srv");
 }
 // ── browsing what's on a server ──
 const libBrowse: { lib: string | null; items: LibTitle[] | null; busy: boolean; err: string; q: string } = {

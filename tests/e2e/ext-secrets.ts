@@ -104,18 +104,18 @@ const retired = {
         }, RETIRED)
     );
     await ev(() => {
-        __ulTest
-            .ACS()
-            .subjects.push({ id: "s-m", name: "Mathematics", fields: { Analysis: { lvl: 0 } }, order: ["Analysis"] });
         __ulTest.setMode("academic");
-        __ulTest.ui.learnSub = "s-m";
         __ulTest.goTab("learn");
+        __ulTest.openModal("lcnew", {});
     });
-    await p.waitForTimeout(200);
+    await p.waitForSelector("#lcn-q");
+    await p.fill("#lcn-q", "maths");
+    await p.waitForTimeout(150);
     ok(
-        "…and the Learning Centre looks things up by itself",
-        await ev(() => /Look it up/.test(document.body.textContent))
+        "…and the Learning Centre builds a course by itself",
+        await ev(() => /Mathematics/.test(document.querySelector(".lchit")?.textContent || ""))
     );
+    await ev(() => __ulTest.closeModal());
     await ev(
         async r =>
             __ulTest.tx(

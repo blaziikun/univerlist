@@ -27,6 +27,7 @@ import PlayingPage from "../insights/pages/PlayingPage.svelte";
 import QuotesPage from "../insights/pages/QuotesPage.svelte";
 import SeasonalPage from "../insights/pages/SeasonalPage.svelte";
 import SeriesPage from "../insights/pages/SeriesPage.svelte";
+import Airing from "../library/stats/Airing.svelte";
 import LearnPage from "../learning-centre/pages/LearnPage.svelte";
 import CurriculaPage from "../learning-centre/pages/CurriculaPage.svelte";
 import ProfilePage from "./shell/ProfilePage.svelte";
@@ -50,6 +51,7 @@ const TABS: Record<string, Component> = {
     discover: InsightsPage,
     rank: RankPage,
     seasonal: SeasonalPage,
+    releasing: Airing, // Stats › Coming up, as a tab of its own
     series: SeriesPage,
     quotes: QuotesPage,
     diary: DiaryPage,

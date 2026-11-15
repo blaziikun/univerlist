@@ -91,17 +91,14 @@ import { ok, evaluator } from "./helpers.ts";
     await key("Escape");
     s = await st();
     ok("Escape closes a dialog over the player, not the player", !s.modal && s.player, JSON.stringify(s));
-    // Escape climbs one level at a time
+    // Escape is Back: from the player straight to where it was opened from (Watch home here), no show page between
     await key("Escape");
     s = await st();
     ok(
-        "Escape: player → the show",
-        s.page === "watch" && !s.player && s.view === "show" && s.show === "Death Note",
+        "Escape: player → straight back to Watch, no show page in between",
+        s.page === "watch" && !s.player && s.view === "home" && !(await ev(() => !!document.querySelector(".wshow"))),
         JSON.stringify(s)
     );
-    await key("Escape");
-    s = await st();
-    ok("Escape: the show → Watch home", s.page === "watch" && s.view === "home" && !s.show, JSON.stringify(s));
     await key("Escape");
     s = await st();
     ok(

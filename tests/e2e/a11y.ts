@@ -99,7 +99,7 @@ const TAGS = ["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"];
         __ulTest.render();
     });
     // known, and kept as they look: the small "advanced" tag, a season's watched count, an episode's line under the one
-    // playing, a server that didn't play (dimmed on purpose), and the ticks in Customise this page (a row of small boxes)
+    // playing, a server that didn't play (dimmed on purpose), and the ticks in this page's settings (a row of small boxes)
     const LOOKS = [".advtag", ".wseasons .cn", ".cs-ep2 small", ".srcrow.bad", ".wpopts input[data-wp]"];
     await p.waitForTimeout(200);
     await sweep("Watch › your media servers", null, [], LOOKS);
@@ -144,21 +144,28 @@ const TAGS = ["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"];
         __ulTest.W.player!.srcOpen = true;
         __ulTest.playerRedraw();
     });
-    await player("Customise this page", () => {
+    await player("this page's settings", () => {
         __ulTest.W.player!.srcOpen = false;
         __ulTest.ui.wpOpts = true;
         __ulTest.meta.settings.watchPage = { eps: "detailed" };
         __ulTest.playerRedraw();
     });
-    await player("arranging it", () => {
+    await player("its subtitles", () => {
         __ulTest.ui.wpOpts = false;
-        __ulTest.ui.wpEdit = true;
+        __ulTest.W.player!.cc = true;
+        __ulTest.W.player!.subList = [
+            { url: "http://127.0.0.1:9/en.vtt", label: "English", lang: "en", forced: false },
+        ];
+        __ulTest.playerRedraw();
+    });
+    await player("the lights down", () => {
+        __ulTest.W.player!.cc = false;
+        __ulTest.meta.settings.player = { ...__ulTest.PS(), lights: true };
         __ulTest.playerRedraw();
     });
     await player("cinema mode", () => {
-        __ulTest.ui.wpEdit = false;
-        __ulTest.meta.settings.player = { ...__ulTest.PS(), layout: "cinema" };
-        __ulTest.renderPlayer();
+        __ulTest.meta.settings.player = { ...__ulTest.PS(), layout: "cinema", lights: false };
+        __ulTest.playerRedraw();
     });
     await player("YouTube", () => {
         __ulTest.W.player!.srcs = [{ name: "YouTube", url: "https://www.youtube.com/watch?v=abcdefghijk" }];
@@ -352,160 +359,123 @@ const TAGS = ["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"];
         await sweep(`the ${tab} tab (${mode})`);
     }
 
-    // the Learning Centre: Courses, a course with a module open in each of its pathway's layouts, and Curricula
+    // the Learning Centre: all courses, a course (its Next, map, Built from and degree open), Curricula, a new course
     await ev(() => {
-        const S = {
-            id: "ax",
-            name: "Sweep course",
+        const C = __ulTest.lcNewCourse("Sweep course", {
             g: "S",
             fields: { Analysis: { lvl: 2 } },
             order: ["Analysis"],
             goal: 3,
             kind: "sci",
-            sources: [{ id: "q1", kind: "uni", name: "North Hall", url: "https://example.org/n", note: "Why" }],
-            opps: [{ id: "o1", t: "A summer school", when: "2026-07-01", url: "", done: false }],
-        };
-        __ulTest
-            .ACS()
-            .subjects.push(S, { id: "ay", name: "Other course", fields: {}, order: [], goal: 0, kind: "arts" });
-        const P = __ulTest.lcNewPath({
-            name: "Sweep course",
-            sub: "ax",
+            degree: true,
             uni: "North Hall",
             url: "https://example.org/p",
-            about: "A summary.",
+            stages: [{ id: "st1", name: "Year 1" }],
+            topics: [
+                { id: "ta", name: "Analysis", area: "Analysis" },
+                { id: "tg", name: "Groups", area: "Algebra" },
+            ],
+            modules: [
+                {
+                    id: "m1",
+                    stage: "st1",
+                    code: "MA1",
+                    name: "Analysis I",
+                    credits: "15",
+                    core: true,
+                    status: "taking",
+                    grade: "70",
+                },
+                {
+                    id: "m2",
+                    stage: "",
+                    code: "",
+                    name: "Groups",
+                    credits: "10",
+                    core: false,
+                    status: "planned",
+                    grade: "",
+                },
+            ],
         });
-        P.method = "One rule";
-        P.goals = [{ id: "g1", t: "Mock exam", date: "2026-03-01", done: false }];
-        P.stages = [{ id: "st1", name: "Year 1" }];
-        P.modules = [
+        C.books.push(
             {
-                id: "m1",
-                stage: "st1",
-                code: "MA1",
-                name: "Analysis I",
-                credits: "15",
-                core: true,
-                status: "taking",
-                grade: "70",
-                term: "Autumn",
-                topics: [
-                    { t: "Limits", done: true },
-                    { t: "Series", done: false },
-                ],
+                id: "k1",
+                t: "Lanterns",
+                a: "Ora Quill",
+                topic: "ta",
+                lvl: 1,
+                st: "reading",
+                after: [],
+                top: true,
+                mod: "m1",
             },
             {
-                id: "m2",
-                stage: "",
-                code: "",
-                name: "Groups",
-                credits: "10",
-                core: false,
-                status: "planned",
-                grade: "",
-                term: "",
-                topics: [{ t: "Limits", done: false }],
-                after: ["m1"],
+                id: "k2",
+                t: "More Lanterns",
+                a: "Lem Varga",
+                topic: "ta",
+                tops: ["tg"],
+                lvl: 2,
+                st: "todo",
+                after: [{ k: "k1", s: "done" }],
             },
-        ];
-        P.books.push(
-            { id: "k1", t: "Lanterns", a: "Ora Quill", mod: "m1", st: "reading", after: [], top: true },
-            { id: "k2", t: "More Lanterns", a: "Lem Varga", mod: "m1", st: "todo", after: [{ k: "k1", s: "done" }] },
-            { id: "k3", t: "A Handbook", a: "", st: "todo", after: [], ref: true }
+            { id: "k3", t: "A Handbook", a: "", topic: "tg", lvl: 3, st: "todo", after: [] },
+            { id: "k4", t: "Done Already", a: "Pia Lund", topic: "tg", lvl: 2, st: "done", after: [] }
         );
-        const Q = __ulTest.lcNewPath({ name: "Other course", sub: "ay" });
-        Q.modules = [
-            {
-                id: "x1",
-                stage: "",
-                code: "",
-                name: "Waves",
-                core: true,
-                status: "planned",
-                topics: [{ t: "Limits", done: false }],
-            },
-        ];
-        __ulTest.uniAddProgramme("ax", {
+        __ulTest.lcNewCourse("Other course", { kind: "arts" });
+        __ulTest.ui.learnSub = C.id;
+        __ulTest.uniAddProgramme(C.id, {
             uni: "North Hall",
             name: "BSc",
+            url: "https://example.org/bsc",
             modules: [
                 { name: "Analysis I", core: true, books: [["Lanterns", "Ora Quill"]] },
                 { name: "Groups", books: [["Group Things", "Ina Brook"]] },
+                { name: "Waves" },
             ],
-        });
-        __ulTest.uniAddProgramme("ax", {
-            uni: "East Gate",
-            name: "MMath",
-            modules: [{ name: "Analysis", books: [["Lanterns", "Ora Quill"]] }],
         });
         __ulTest.setMode("academic");
     });
     const steps: [string, () => void][] = [
         [
-            "Courses",
+            "all courses",
             () => {
-                __ulTest.ui.learnSub = __ulTest.ui.pwId = null;
+                __ulTest.ui.lcHub = true;
                 __ulTest.goTab("learn");
             },
         ],
         [
-            "a course (Modules, one open, compared)",
+            "a course (Next, the map, Built from and the degree open)",
             () => {
-                __ulTest.ui.learnSub = "ax";
+                __ulTest.ui.lcHub = false;
+                __ulTest.ui.learnSub = __ulTest.LCS()[0].id;
                 __ulTest.ui.lcOpen = "m1";
-                __ulTest.ui.lcCmp = __ulTest.PWS().find(p => p.sub === "ay")!.id;
                 __ulTest.goTab("learn");
+                for (const d of document.querySelectorAll<HTMLDetailsElement>(".lcbuilt, .lcdeg, .lcmore, .lcstg"))
+                    d.open = true;
             },
         ],
         [
-            "a course (Map)",
+            "Curricula",
             () => {
-                __ulTest.PWS().find(p => p.sub === "ax")!.view = "map";
-                __ulTest.renderMain();
-            },
-        ],
-        [
-            "a course (Stages)",
-            () => {
-                __ulTest.PWS().find(p => p.sub === "ax")!.view = "stages";
-                __ulTest.renderMain();
-            },
-        ],
-        [
-            "a course (Threads)",
-            () => {
-                __ulTest.PWS().find(p => p.sub === "ax")!.view = "threads";
-                __ulTest.renderMain();
-            },
-        ],
-        [
-            "Curricula (merged)",
-            () => {
-                __ulTest.ui.uniSub = "ax";
                 __ulTest.goTab("curricula");
-            },
-        ],
-        [
-            "Curricula (side by side, pasting, topics)",
-            () => {
-                __ulTest.ui.uniView = "side";
-                __ulTest.ui.uniPaste = true;
-                __ulTest.ui.uniTopics = true;
-                __ulTest.renderMain();
             },
         ],
     ];
     for (const [name, step] of steps) {
         await ev(step);
         await p.waitForTimeout(300);
-        // known, and kept as they look: the faint "After …" and thread counts (--faint, stated on the privacy page) and the
-        // small ↑↓ text buttons that move stages, modules and readings
-        await sweep(`the Learning Centre: ${name}`, null, ["target-size"], [".pww", ".pwplq > .n"]);
+        if (name.startsWith("a course"))
+            await ev(() => {
+                for (const d of document.querySelectorAll<HTMLDetailsElement>(".lcbuilt, .lcdeg, .lcmore, .lcstg"))
+                    d.open = true;
+            });
+        // known, and kept as they look: the faint "After …" under a waiting book (--faint, stated on the privacy page)
+        await sweep(`the Learning Centre: ${name}`, null, ["target-size"], [".lcw", ".lctop small"]);
     }
     await ev(() => {
-        __ulTest.ui.uniView = "merged";
-        __ulTest.ui.uniPaste = __ulTest.ui.uniTopics = false;
-        __ulTest.ui.lcOpen = __ulTest.ui.lcCmp = null;
+        __ulTest.ui.lcOpen = null;
     });
 
     // Stats' deeper views, a tier list (its tiers, ranked, quick rank)
@@ -760,7 +730,7 @@ const TAGS = ["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"];
         [
             "A reading",
             () => {
-                const P = __ulTest.lcNewPath({ name: "Sweep", sub: "" });
+                const P = __ulTest.lcNewCourse("Sweep");
                 P.books.push(
                     { id: "sw1", t: "Lanterns", a: "Ora Quill", st: "todo", after: [] },
                     {
@@ -776,9 +746,15 @@ const TAGS = ["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"];
             },
         ],
         [
+            "A new course",
+            () => {
+                __ulTest.openModal("lcnew", {});
+            },
+        ],
+        [
             "Fetch from a link",
             () => {
-                __ulTest.openModal("lcimport", { pid: __ulTest.PWS()[0].id, step: "link", want: "auto" });
+                __ulTest.openModal("lcimport", { pid: __ulTest.LCS()[0].id, step: "link", want: "auto" });
             },
         ],
         // known, and kept as they look: an unticked row is faded on purpose, and the table's ↑↓ are small text buttons
@@ -786,7 +762,7 @@ const TAGS = ["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"];
             "Fetch from a link: what was found",
             () => {
                 __ulTest.openModal("lcimport", {
-                    pid: __ulTest.PWS()[0].id,
+                    pid: __ulTest.LCS()[0].id,
                     step: "review",
                     found: "readings",
                     rows: [

@@ -1,64 +1,21 @@
 // src/features/watch-read/player.ts
 // ─────────────────────────────────────────────────────────────────
-//  The player's own controls, and making the player page yours
+//  The player's own controls, as the video plays
 //
-//  Controls on the video: a scrub bar (what has loaded shows on it; hover for the time; it also seeks converted
-//  streams, which the browser's own controls can't), play, time and volume, plus any button you put there. Every button
-//  lives on the video, under it, or nowhere, chosen by dragging them around in "Edit on the page", or in ⋯. The same
-//  edit mode sets the player's size, the side panel's width, corners, how big the controls are, how dark the shade
-//  behind them is, how soon they hide, and where subtitles sit. The browser's own controls are one setting away (player
-//  settings › Controls). player/*.svelte draw all of it; what moves as the video plays is drawn here (pcDraw).
+//  Laid out like a streaming site's (player/Controls.svelte): the scrub bar (what has loaded shows on it; hover for the
+//  time; it also seeks converted streams, which the browser's own controls can't), then play, next, the volume and the
+//  time on the left, and the settings, subtitles, cinema mode and full screen on the right. Over the picture
+//  (player/CinStage.svelte): a click in the middle plays or pauses, the sides jump back and forward (a double click or
+//  a double tap there too), and Skip intro while an opening plays. What moves as the video plays is drawn here
+//  (pcDraw), on the video's own events, not through Svelte.
 // ─────────────────────────────────────────────────────────────────
 
 import { $, markDirty, meta, ownOf, ui } from "../core/core";
-import { playerRedraw, PS, renderPlayer, W, WP, wpSave } from "./watch";
-import type { WatchPage } from "./watch";
+import { playerRedraw, PS, renderPlayer, W } from "./watch";
 import { ssKey } from "./series";
-import { stageChanged } from "./stage-state.svelte";
+import { browser, chance } from "./playable";
 import type { WatchPlayer, WatchSource } from "../core/model";
 
-/** how the player looks: its size, the side panel, corners, controls, the shade behind them, subtitles */
-export interface Look {
-    size: number;
-    side: number;
-    radius: number;
-    ctl: number;
-    dim: number;
-    hideAfter: number;
-    subPos: number;
-    subBg: number;
-}
-const LOOK_DEF: Look = { size: 100, side: 340, radius: 12, ctl: 100, dim: 60, hideAfter: 2.6, subPos: 0, subBg: 55 };
-const SPOT_DEF: Record<string, string> = {
-    play: "video",
-    back: "video",
-    fwd: "video",
-    skip: "video",
-    time: "video",
-    vol: "video",
-    gap: "video",
-    subs: "video",
-    speed: "video",
-    full: "video",
-};
-export const LOOK = (): Look => {
-    const mine = WP().look || {},
-        get = (k: keyof Look) => ownOf(mine, k) ?? LOOK_DEF[k];
-    return {
-        size: get("size"),
-        side: get("side"),
-        radius: get("radius"),
-        ctl: get("ctl"),
-        dim: get("dim"),
-        hideAfter: get("hideAfter"),
-        subPos: get("subPos"),
-        subBg: get("subBg"),
-    };
-};
-/** where a button sits: "video", "under" or "off" */
-export const spotOf = (wp: WatchPage, k: string): string =>
-    wp.off.includes(k) ? "off" : ownOf(wp.spot || {}, k) || ownOf(SPOT_DEF, k) || "under";
-export const customControls = () => PS().controls !== "browser";
 const fmtT = (s: number) => {
     s = Math.max(0, Math.floor(s || 0));
     const h = Math.floor(s / 3600),
@@ -68,7 +25,7 @@ const fmtT = (s: number) => {
 };
 const video = () => $<HTMLVideoElement>("#cinema video");
 /** where you are in what's playing, counting a converted stream's starting point */
-export const curAt = () => {
+const curAt = () => {
     const p = W.player,
         v = video();
     return p && v ? (p.offset || 0) + (v.currentTime || 0) : 0;
@@ -94,12 +51,39 @@ export function pcSeekTo(t: number) {
     v.currentTime = t - (p.offset || 0);
 }
 export const pcSeekBy = (d: number) => pcSeekTo(curAt() + d);
+/** Skip intro (its button, or S): to where the opening ends, when that's known; otherwise ahead by your setting */
+export function introSkip() {
+    const p = W.player,
+        at = curAt(),
+        i = p?.intro;
+    if (i && at >= i.start - 1 && at < i.end) pcSeekTo(i.end);
+    else if (PS().skip) pcSeekBy(PS().skip);
+}
+/** the player's panels: the settings (⚙), the subtitles (CC), the servers, and the page's own settings. One at a time */
+export type Panel = "opts" | "cc" | "srcs" | "page";
+export function panelToggle(k: Panel) {
+    const p = W.player;
+    if (!p) return;
+    const on = k === "opts" ? !p.opts : k === "cc" ? !p.cc : k === "srcs" ? !p.srcOpen : !ui.wpOpts;
+    p.opts = k === "opts" && on;
+    p.cc = k === "cc" && on;
+    p.srcOpen = k === "srcs" && on;
+    ui.wpOpts = k === "page" && on;
+    playerRedraw();
+}
+/** every panel closes (a click outside them, Escape) */
+export function panelsClose() {
+    const p = W.player;
+    if (!p || !(p.opts || p.cc || p.srcOpen || ui.wpOpts)) return;
+    p.opts = p.cc = p.srcOpen = false;
+    ui.wpOpts = false;
+    playerRedraw();
+}
 // ── the player's own controls, as the video plays ──
-// Controls.svelte and Tool.svelte draw them; what changes as the video plays (how far along it is, what has loaded, the
-// time, ▶ or ❚❚, the volume) is written straight onto them here, on the video's own events: several times a second,
-// which a component redrawing each time would only slow down. Each control says it's there through its attachment
-// (pcPart), wherever you've put it, so moving one or drawing the player again needs nothing more.
-type Part = "scrub" | "time" | "play" | "volr" | "mute";
+// Controls.svelte draws them; what changes as the video plays (how far along it is, what has loaded, the time, play
+// or pause, the volume) is written straight onto them here, on the video's own events: several times a second, which
+// a component redrawing each time would only slow down. Each control says it's there through its attachment (pcPart).
+type Part = "scrub" | "time" | "play" | "volr" | "mute" | "bigplay";
 const CTL: Partial<Record<Part, HTMLElement>> = {};
 let dragging = false; // the scrub bar is being dragged: it follows the pointer, not the video
 /** draws the controls from the video playing now */
@@ -128,22 +112,26 @@ function pcDraw() {
     } catch (_) {}
     if (buf) buf.style.width = (D ? Math.min(1, ((p.offset || 0) + b) / D) * 100 : 0).toFixed(2) + "%";
     if (CTL.time) CTL.time.textContent = `${fmtT(at)} / ${D ? fmtT(D) : "–:––"}`;
-    if (CTL.play) {
-        CTL.play.textContent = v.paused ? "▶" : "❚❚";
-        CTL.play.setAttribute("aria-pressed", String(!v.paused));
-    }
+    // play and pause: both icons are there, the button's state says which shows
+    for (const el of [CTL.play, CTL.bigplay])
+        if (el) {
+            el.dataset.on = v.paused ? "" : "1";
+            el.setAttribute("aria-label", v.paused ? "Play (space)" : "Pause (space)");
+        }
 }
 // the volume's slider and the mute button, from the video
 function pcVolume(v: HTMLVideoElement) {
+    const off = v.muted || v.volume <= 0.02;
     if (CTL.volr instanceof HTMLInputElement) CTL.volr.value = String(v.muted ? 0 : v.volume);
-    if (CTL.mute) CTL.mute.textContent = v.muted || v.volume <= 0.02 ? "🔇" : "🔊";
+    if (CTL.mute) {
+        CTL.mute.dataset.on = off ? "" : "1";
+        CTL.mute.setAttribute("aria-label", off ? "Unmute (M)" : "Mute (M)");
+    }
 }
 /** a control's attachment: it's drawn from the video at once, and kept in step from then on */
 export const pcPart =
     (part: Part) =>
     (el: HTMLElement): (() => void) => {
-        // with the browser's own controls these buttons still work when pressed, but nothing draws on them
-        if (!W.player?.frame?.custom) return () => {};
         CTL[part] = el;
         pcDraw();
         const v = video();
@@ -176,7 +164,6 @@ export function pcScrub(scrub: HTMLElement): () => void {
         if (!dragging && tip) tip.hidden = true;
     };
     const down = (e: PointerEvent) => {
-        if (ui.wpEdit) return;
         dragging = true;
         scrub.setPointerCapture(e.pointerId);
         const f = fracAt(e);
@@ -218,73 +205,140 @@ export function pcVolumeSet(x: number) {
     v.volume = Math.max(0, x);
     v.muted = x <= 0.02;
 }
-/** the player's own controls follow this video (video.ts): its events draw them; a click on the picture plays or
- *  pauses, a double click is full screen */
-export function pcBind(v: HTMLVideoElement) {
+/** play or pause */
+export function pcToggle() {
+    const v = video();
+    if (!v) return;
+    if (v.paused) v.play().catch(() => {});
+    else v.pause();
+}
+/** the player's own controls follow this video (video.ts): its events draw them */
+export function pcBind(v: HTMLVideoElement, signal: AbortSignal) {
     for (const ev of ["timeupdate", "progress", "play", "pause", "durationchange", "loadedmetadata", "seeking"])
-        v.addEventListener(ev, pcDraw);
+        v.addEventListener(ev, pcDraw, { signal });
     pcDraw();
     pcVolume(v);
-    v.addEventListener("volumechange", () => pcVolume(v));
-    v.addEventListener("click", () => {
-        if (ui.wpEdit) return;
-        if (v.paused) v.play().catch(() => {});
-        else v.pause();
-    });
-    v.addEventListener("dblclick", () => cinFull());
-    v.addEventListener("loadedmetadata", () => subLines(v));
+    v.addEventListener("volumechange", () => pcVolume(v), { signal });
 }
-/** full screen, or back */
-export function cinFull() {
-    const el = $("#cinema");
-    if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
-    else if (el && el.requestFullscreen) el.requestFullscreen().catch(() => {});
-}
-/** the look, as the CSS variables the player's styles read (Cinema.svelte puts them on #cinema) */
-export function lookVars() {
-    const L = LOOK();
-    return {
-        size: L.size + "%",
-        side: L.side + "px",
-        radius: L.radius + "px",
-        ctl: (L.ctl / 100).toFixed(2),
-        dim: (L.dim / 100).toFixed(2),
-        subBg: (L.subBg / 100).toFixed(2),
+/** what a press on the picture does (CinStage's stage): in the middle, play or pause (a double click: full screen);
+ *  on either side, a double click or tap jumps back or forward, and each further tap jumps again. On a phone a
+ *  single tap shows or hides the controls instead, as a streaming app does. wake() shows the controls, sleep() hides
+ *  them; shown() says whether they're up */
+export function tapZones(o: { wake: () => void; sleep: () => void; shown: () => boolean }) {
+    return (el: HTMLElement) => {
+        let timer: ReturnType<typeof setTimeout> | undefined,
+            lastSide = "",
+            lastAt = 0,
+            burst = false;
+        const side = (e: PointerEvent) => {
+            const r = el.getBoundingClientRect(),
+                x = (e.clientX - r.left) / r.width;
+            return x < 0.3 ? "back" : x > 0.7 ? "fwd" : "mid";
+        };
+        const jump = (s: string) => {
+            pcSeekBy((s === "back" ? -1 : 1) * PS().seek);
+            flash(el, s);
+            o.wake();
+        };
+        const up = (e: PointerEvent) => {
+            // only the picture itself (a card or a button over it does its own thing)
+            const t = e.target;
+            if (
+                e.button > 0 ||
+                !(t instanceof HTMLVideoElement || t === el || (t instanceof Element && t.matches(".pc-mid")))
+            )
+                return;
+            const s = side(e),
+                touch = e.pointerType === "touch",
+                now = Date.now(),
+                again = s === lastSide && now - lastAt < 320;
+            lastSide = s;
+            lastAt = now;
+            clearTimeout(timer);
+            // a double press on a side jumps; while you keep tapping it, each tap jumps again
+            if (s !== "mid" && (again || burst)) {
+                burst = true;
+                jump(s);
+                timer = setTimeout(() => (burst = false), 600);
+                return;
+            }
+            // one press: wait a moment in case it's the first of two (on the sides), then do what a single one does
+            const single = () => {
+                if (touch) {
+                    if (o.shown()) o.sleep();
+                    else o.wake();
+                } else {
+                    pcToggle();
+                    o.wake();
+                }
+            };
+            if (s === "mid" && !touch) single();
+            else timer = setTimeout(single, 280);
+        };
+        // a double click in the middle: full screen (each click of it played or paused, as on a streaming site)
+        const dbl = (e: MouseEvent) => {
+            const t = e.target,
+                r = el.getBoundingClientRect(),
+                x = (e.clientX - r.left) / r.width;
+            if (x >= 0.3 && x <= 0.7 && (t instanceof HTMLVideoElement || t === el)) cinFull();
+        };
+        el.addEventListener("pointerup", up);
+        el.addEventListener("dblclick", dbl);
+        return () => {
+            clearTimeout(timer);
+            el.removeEventListener("pointerup", up);
+            el.removeEventListener("dblclick", dbl);
+        };
     };
 }
-/** one of the look's sliders moved (EditBar.svelte): kept, and the player follows as you drag */
-export function lookSet(k: keyof Look, v: number) {
-    const p = WP();
-    p.look = { ...(p.look || {}), [k]: v };
-    wpSave(p);
-    stageChanged("look");
-    const vd = video();
-    if (vd && k === "subPos") subLines(vd);
+// the ⟲ or ⟳ that flashes where you double-tapped
+function flash(el: HTMLElement, s: string) {
+    const f = el.querySelector<HTMLElement>(`.pc-flash.${s}`);
+    if (!f) return;
+    f.classList.remove("go");
+    void f.offsetWidth;
+    f.classList.add("go");
 }
-// subtitles sit higher when you raise them (whole lines up from the bottom)
-function subLines(v: HTMLVideoElement) {
-    const n = LOOK().subPos;
-    for (const t of v.textTracks)
-        for (const c of [...(t.cues || [])])
-            try {
-                if (!(c instanceof VTTCue)) continue;
-                c.snapToLines = true;
-                c.line = n ? -(1 + n) : "auto";
-            } catch (_) {}
+// ── full screen ──
+const fsEl = () => document.fullscreenElement || (Reflect.get(document, "webkitFullscreenElement") as Element | null);
+/** full screen: the player alone (its picture and controls), or back. On an iPhone, whose browser lets only a video go
+ *  full screen, the video's own full screen */
+export function cinFull() {
+    const box = $<HTMLElement>("#cinema .cin-main"),
+        v = video();
+    if (fsEl()) {
+        (document.exitFullscreen ? document.exitFullscreen() : Promise.resolve()).catch(() => {});
+        const wexit: unknown = Reflect.get(document, "webkitExitFullscreen");
+        if (!document.exitFullscreen && typeof wexit === "function") wexit.call(document);
+        return;
+    }
+    if (box && typeof box.requestFullscreen === "function" && document.fullscreenEnabled !== false) {
+        box.requestFullscreen({ navigationUI: "hide" }).catch(() => nativeFull(v));
+        return;
+    }
+    const wreq: unknown = box ? Reflect.get(box, "webkitRequestFullscreen") : null;
+    if (box && typeof wreq === "function" && Reflect.get(document, "webkitFullscreenEnabled")) {
+        wreq.call(box);
+        return;
+    }
+    nativeFull(v);
 }
-/** a button dragged onto the video, under it or into Hidden, before another (Cinema.svelte's dragging) */
-export function wtMove(k: string, zone: string, beforeK: string | null) {
-    const p = WP();
-    p.spot = { ...(p.spot || {}) };
-    p.off = p.off.filter(x => x !== k);
-    if (zone === "off") p.off.push(k);
-    else p.spot[k] = zone;
-    p.tools = p.tools.filter(x => x !== k);
-    const i = beforeK ? p.tools.indexOf(beforeK) : -1;
-    if (i >= 0) p.tools.splice(i, 0, k);
-    else p.tools.push(k);
-    wpSave(p);
-    playerRedraw();
+// the video's own full screen (iPhone)
+function nativeFull(v: HTMLVideoElement | null) {
+    const enter: unknown = v ? Reflect.get(v, "webkitEnterFullscreen") : null;
+    if (v && typeof enter === "function") enter.call(v);
+}
+/** whether the player is full screen now */
+export const isFull = () => !!fsEl();
+/** the look the player's styles read, as CSS variables (Cinema.svelte puts them on #cinema): the subtitles' size,
+ *  height and background */
+export function lookVars() {
+    const o = PS();
+    return {
+        sub: (Math.max(50, Math.min(250, o.subSize)) / 100).toFixed(2),
+        subPos: String(Math.max(0, Math.min(12, o.subPos))),
+        subBg: (Math.max(0, Math.min(100, o.subBg)) / 100).toFixed(2),
+    };
 }
 // ── small things that make watching nicer ──
 // the server you pick for a show is the one its other episodes start on (your own copy, a friend's, a server…)
@@ -317,7 +371,8 @@ export function srvPreferred(p: WatchPlayer): number {
 export function srvApplyPref(p: WatchPlayer) {
     if (p.prefDone || p.single) return;
     const i = srvPreferred(p);
-    if (i < 0 || i === p.k) return;
+    // (not one this browser can't play, however much you like it elsewhere)
+    if (i < 0 || i === p.k || chance(p.srcs[i], browser()) === 0) return;
     const v = video();
     if (v && (p.offset || 0) + v.currentTime > 5) {
         p.prefDone = true;

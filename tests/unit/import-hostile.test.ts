@@ -121,20 +121,19 @@ describe("bringing an export's parts in", () => {
             {},
             "replace"
         );
-        const S = meta.courses.subjects.find(s => s.id === "s1"),
-            P = meta.courses.paths.find(p => p.id === "p1");
-        expect(meta.courses.subjects.map(s => s.id)).toEqual(["s1"]);
+        const S = meta.courses.courses.find(s => s.id === "s1");
+        expect(meta.courses.courses.map(s => s.id)).toEqual(["s1"]);
         expect(S!.goal).toBe(5);
         expect(S!.fields).toEqual({ Algebra: { lvl: 5 } });
-        expect(P!.modules!.map(m => [m.id, m.topics, m.after])).toEqual([["m1", [], undefined]]);
-        expect(P!.books.map(b => [b.id, b.after])).toEqual([["b1", []]]);
-        expect(meta.courses.curricula!.s1).toMatchObject({
-            topics: [{ id: "t1", name: "Analysis" }],
-            progs: [],
-            hide: ["p"],
-        });
+        expect(S!.modules!.map(m => [m.id, m.topics, m.after])).toEqual([["m1", [], undefined]]);
+        expect(S!.books.map(b => [b.id, b.after])).toEqual([["b1", []]]);
+        // "Analysis" is the catalogue's Real analysis, and the book in no module (which the catalogue knows) is in it:
+        // no stand-in "General" topic, nothing in a "Topics" area
+        expect(S!.topics).toEqual([{ id: "t1", name: "Real analysis", area: "Analysis" }]);
+        expect(S!.books.map(b => b.topic)).toEqual(["t1"]);
+        expect(S!.progs).toEqual([]);
+        expect(S!.kept).toMatchObject({ curricula: { hide: [1, "p"] } });
         ui.learnSub = "s1";
-        ui.pwId = null;
         // …and the course's page draws it
         const target = document.createElement("div");
         let page: ReturnType<typeof mount> | undefined;

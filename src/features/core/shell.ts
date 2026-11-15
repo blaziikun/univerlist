@@ -52,6 +52,19 @@ export const ICON = {
     v_list: `<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 6h11M9 12h11M9 18h11"/><circle cx="4.5" cy="6" r="1.2" fill="currentColor"/><circle cx="4.5" cy="12" r="1.2" fill="currentColor"/><circle cx="4.5" cy="18" r="1.2" fill="currentColor"/></svg>`,
     play: `<svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M8 5.5v13l11-6.5z"/></svg>`,
     servers: `<svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><rect x="3.5" y="4" width="17" height="6.5" rx="1.6" fill="none" stroke="currentColor" stroke-width="1.8"/><rect x="3.5" y="13.5" width="17" height="6.5" rx="1.6" fill="none" stroke="currentColor" stroke-width="1.8"/><circle cx="7.5" cy="7.25" r="1.15" fill="currentColor"/><circle cx="7.5" cy="16.75" r="1.15" fill="currentColor"/></svg>`,
+    // the player's own (watch-read/player/): drawn at 1em, so a button's font size sets their size
+    pause: `<svg viewBox="0 0 24 24" width="1em" height="1em" fill="currentColor" aria-hidden="true"><rect x="6" y="5" width="4.2" height="14" rx="1"/><rect x="13.8" y="5" width="4.2" height="14" rx="1"/></svg>`,
+    playBig: `<svg viewBox="0 0 24 24" width="1em" height="1em" fill="currentColor" aria-hidden="true"><path d="M7.5 4.8v14.4a.8.8 0 0 0 1.2.7l11.4-7.2a.8.8 0 0 0 0-1.4L8.7 4.1a.8.8 0 0 0-1.2.7z"/></svg>`,
+    nextEp: `<svg viewBox="0 0 24 24" width="1em" height="1em" fill="currentColor" aria-hidden="true"><path d="M5 5.3v13.4a.8.8 0 0 0 1.2.7l9.6-6.7a.8.8 0 0 0 0-1.4L6.2 4.6A.8.8 0 0 0 5 5.3z"/><rect x="17" y="5" width="2.6" height="14" rx="1"/></svg>`,
+    volume: `<svg viewBox="0 0 24 24" width="1em" height="1em" fill="currentColor" aria-hidden="true"><path d="M4 9.2h3.6L12.3 5a.6.6 0 0 1 1 .5v13a.6.6 0 0 1-1 .5l-4.7-4.2H4a1 1 0 0 1-1-1V10.2a1 1 0 0 1 1-1z"/><path d="M16 8.5a5 5 0 0 1 0 7M18.6 6a8.6 8.6 0 0 1 0 12" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/></svg>`,
+    muted: `<svg viewBox="0 0 24 24" width="1em" height="1em" fill="currentColor" aria-hidden="true"><path d="M4 9.2h3.6L12.3 5a.6.6 0 0 1 1 .5v13a.6.6 0 0 1-1 .5l-4.7-4.2H4a1 1 0 0 1-1-1V10.2a1 1 0 0 1 1-1z"/><path d="M16.5 9.5l5 5M21.5 9.5l-5 5" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/></svg>`,
+    fullscreen: `<svg viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9V5.5A1.5 1.5 0 0 1 5.5 4H9M15 4h3.5A1.5 1.5 0 0 1 20 5.5V9M20 15v3.5a1.5 1.5 0 0 1-1.5 1.5H15M9 20H5.5A1.5 1.5 0 0 1 4 18.5V15"/></svg>`,
+    fullscreenOff: `<svg viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 4v3.5A1.5 1.5 0 0 1 7.5 9H4M20 9h-3.5A1.5 1.5 0 0 1 15 7.5V4M15 20v-3.5a1.5 1.5 0 0 1 1.5-1.5H20M4 15h3.5A1.5 1.5 0 0 1 9 16.5V20"/></svg>`,
+    theater: `<svg viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round" aria-hidden="true"><rect x="2.5" y="6" width="19" height="12" rx="2"/></svg>`,
+    theaterOff: `<svg viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="7.5" width="14" height="9" rx="1.6"/></svg>`,
+    bulb: `<svg viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-3.6 10.8c.7.6 1.1 1.3 1.1 2.2h5c0-.9.4-1.6 1.1-2.2A6 6 0 0 0 12 3z"/></svg>`,
+    replay: `<svg viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 12A8 8 0 1 0 12 4"/><path d="M14.4 1.6L12 4l2.4 2.4"/></svg>`,
+    forward: `<svg viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 12A8 8 0 1 1 12 4"/><path d="M9.6 1.6L12 4 9.6 6.4"/></svg>`,
 } satisfies Record<string, string>;
 /** an icon's name in ICON */
 export type IconName = keyof typeof ICON;
@@ -371,6 +384,7 @@ export const TAB_NAME: Record<string, string> = {
     discover: "Insights",
     rank: "Rank",
     seasonal: "This season",
+    releasing: "Releasing",
     series: "Series",
     quotes: "Quotes",
     diary: "Diary",
@@ -379,7 +393,39 @@ export const TAB_NAME: Record<string, string> = {
     paths: "Pathways",
     curricula: "Curricula",
 };
-export const EXTRA_TABS: string[] = ["seasonal", "series", "quotes", "diary", "playing", "learn", "paths", "curricula"];
+export const EXTRA_TABS: string[] = [
+    "seasonal",
+    "releasing",
+    "series",
+    "quotes",
+    "diary",
+    "playing",
+    "learn",
+    "paths",
+    "curricula",
+];
+/** the media a mode is for (its match, without what it leaves out): "*" for everything */
+const modeMedia = (mode: Mode) =>
+    (mode.match || []).filter(p => !p.startsWith("!")).map(p => (p === "*" ? "*" : p.split(":")[0]));
+/** the kinds of thing each extra tab is about: a mode shows it only if it holds one of them */
+const TAB_MEDIA: Record<string, string[]> = {
+    seasonal: ["anime"], // This season: the anime airing now
+    releasing: ["tv", "anime"], // what's still coming out, and when its next episode is
+    series: ["book", "novel", "comic", "manga", "manhwa"],
+    quotes: ["book", "novel", "comic", "manga", "manhwa"],
+    diary: ["film", "tv", "anime"],
+    playing: ["game"],
+};
+/** whether a tab belongs in a mode: the core tabs everywhere; the Learning Centre's own tabs only in it, and it
+ *  shows nothing else of the extras; the rest only where the mode holds what they're about */
+export function tabFits(mode: Mode, k: string): boolean {
+    if (!EXTRA_TABS.includes(k)) return true;
+    const lc = mode.space === "learning-centre";
+    if (["learn", "paths", "curricula"].includes(k)) return lc;
+    if (lc) return false;
+    const M = modeMedia(mode);
+    return M.includes("*") || (TAB_MEDIA[k] || []).some(x => M.includes(x));
+}
 // the tabs a mode shows when it has no list of its own (core/tabs.ts keeps each mode's own list)
 export function defaultTabsFor(mode: Mode): string[] {
     const base = meta.layout.tabs
@@ -391,7 +437,9 @@ export function defaultTabsFor(mode: Mode): string[] {
                 !(mode.offTabs || []).includes(t.k)
         )
         .map(t => t.k);
-    const ex = (mode.extra || []).filter(k => EXTRA_TABS.includes(k) && !(mode.offTabs || []).includes(k));
+    const ex = (mode.extra || []).filter(
+        k => EXTRA_TABS.includes(k) && !(mode.offTabs || []).includes(k) && tabFits(mode, k)
+    );
     if (isSpace(mode)) {
         const i = base.indexOf("library");
         base.splice(i < 0 ? 0 : i + 1, 0, ...ex);

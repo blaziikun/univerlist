@@ -1,9 +1,8 @@
 <!--
     src/features/learning-centre/pages/CourseCard.svelte
     ─────────────────────────────────────────────────────────────────
-      A course on the Courses page, in the pathway card's look: its symbol and name, your level and what you're aiming
-      for, its university and programme, its summary, how far through it you are, and what you're reading in it.
-      Pressing it opens the course (learn-open). courseCardLook() in look.ts works out what it shows.
+      A course on the hub: its symbol and name, your level → what you're aiming for, how far through its books you are,
+      and what you're reading in it. Pressing it makes it the current course (learn-open). courseCardLook() in look.ts.
     ─────────────────────────────────────────────────────────────────
 -->
 
@@ -13,8 +12,7 @@
     let { c }: { c: ReturnType<typeof courseCardLook> } = $props();
 </script>
 
-<button class="lcpath" data-act="learn-open" data-k={c.id}><span class="lcph"><b>{c.name}</b>{#if c.level}<i>{c.level}</i>{/if}</span>
-    {#if c.uni}<small class="lcuni">{c.uni}</small>{/if}
-    {#if c.about}<span class="lcabout">{c.about}</span>{/if}
+<button class="lcpath" data-act="learn-open" data-k={c.id}><span class="lcph"><b>{c.name}</b>{#if c.def}<i class="pill lcdef">Default</i>{/if}</span>
+    {#if c.level}<small class="lcuni">{c.level}</small>{/if}
     <span class="lbar"><i style="width:{c.width}%"></i></span>
     <small>{c.line}</small></button>

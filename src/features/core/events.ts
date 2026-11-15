@@ -67,6 +67,8 @@ import { folderSync, loadHosted } from "../import-export/packs";
 import { ambApply } from "../look/ambience";
 import { W } from "../watch-read/watch";
 import { RD } from "../watch-read/read";
+import { routeRestore } from "../watch-read/route";
+import { stageOn } from "../extensions/builtins";
 import { focusSearch } from "./search";
 import { closeCtx, runKey } from "./keys";
 import { placeRestore, restoredPlace, tabOnEnter } from "./tabs";
@@ -823,7 +825,10 @@ export function initEvents() {
             markDirty();
             goSettings("account");
         } else if (!s.welcomed3 && !items.size) openModal("welcome");
-        else if (back) {
+        // the player's address (#watch/…): the same show, season and episode open again
+        else if (stageOn() && routeRestore()) {
+            /* the player opens as the show's details arrive */
+        } else if (back) {
             if (restoredPlace.item) openItem(restoredPlace.item);
             if (restoredPlace.y) requestAnimationFrame(() => setTimeout(() => scrollTo(0, restoredPlace.y), 60));
         }

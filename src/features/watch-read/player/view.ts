@@ -2,19 +2,20 @@
 // ─────────────────────────────────────────────────────────────────
 //  What the player shows, worked out for its components (player/*.svelte)
 //
-//  The player (#cinema) draws what these work out from W.player, your player settings (PS) and how you've arranged
-//  the page (WP): the header or top bar, the stage, each button under or on the video, the blocks beside or under it,
-//  and its panels. They're asked for when the older code asks the player to draw (renderPlayer, playerRedraw and the
-//  smaller asks in watch.ts), never on a timer or while it plays.
+//  The player (#cinema) draws what these work out from W.player, your player settings (PS) and how you've laid out
+//  the page (WP): the top bar, the stage, the controls, the blocks beside or under it, and its panels. They're asked
+//  for when the older code asks the player to draw (renderPlayer, playerRedraw and the smaller asks in watch.ts),
+//  never on a timer or while it plays.
 // ─────────────────────────────────────────────────────────────────
 
 import { cleanTitle, meta, numOf } from "../../core/core";
 import type { PlayerFrame, WatchPlayer, WatchSeason, WatchSource } from "../../core/model";
 import { isOwnSource, NOT_OWN_SOURCE } from "../own-sources";
-import { LOOK, spotOf, customControls } from "../player";
 import { ssList } from "../series";
+import { LIBS } from "../medialibs";
 import { SUB_LANGS } from "../stream";
-import { epWatched, loadPos, posKey, PS, seasonItem, srvDesc, toolName, W, WP, WP_NAMES } from "../watch";
+import { epAbout, epName } from "../episodes";
+import { epWatched, loadPos, posKey, PS, seasonItem, srvDesc, W, WP, WP_NAMES } from "../watch";
 
 /** the address that plays a source: a file's own blob: address, a converted stream from where you are, or its link */
 function playingURL(p: WatchPlayer): string {
@@ -31,7 +32,8 @@ const isHLS = (u: string | undefined) => /\.m3u8(\?|$)/i.test(u || "");
 /** the speeds the player offers */
 export const SPEEDS = [0.5, 0.75, 1, 1.25, 1.5, 1.75, 2];
 
-/** how a new video is set up (renderPlayer): its address, the layout, whose controls, whether it starts by itself */
+/** how a new video is set up (renderPlayer): its address, whether the player's own controls are on it (everything but
+ *  YouTube's own player), whether it starts by itself */
 export function frameOf(p: WatchPlayer): PlayerFrame {
     const o = PS(),
         src: WatchSource = p.srcs[p.k] || {},
@@ -40,19 +42,16 @@ export function frameOf(p: WatchPlayer): PlayerFrame {
     return {
         url,
         yt: yt ? yt[1] : "",
-        lay: !url ? "docked" : o.layout || "docked",
-        custom: !!(customControls() && url && !yt),
-        controls: !customControls(),
+        custom: !!(url && !yt),
         // waiting until it won't stop before it starts (a source that says how much has arrived)
         autoplay: !(src.info && o.startMode === "smooth" && p.hold !== false),
     };
 }
-/** everything the player's frame shows: what plays, the layout, the buttons' words, which parts are there */
+/** everything the player's frame shows: what plays, the layout, the words, which parts are there */
 export function playerView() {
     const p = W.player;
     if (!p) return null;
     const o = PS(),
-        wp = WP(),
         f = p.frame || frameOf(p),
         si = p.si ?? 0,
         hasNext =
@@ -60,6 +59,7 @@ export function playerView() {
             !!W.seasons[si + 1],
         sh = W.show,
         bItem = seasonItem(p.listSi ?? p.si),
+        name = p.film ? "" : epName(si, p.e) || p.epTitle || "",
         epTag =
             p.e != null && !p.film
                 ? (W.seasons.length > 1 ? `${W.seasons[si]?.label || "S" + (si + 1)} · ` : "") + `Episode ${p.e}`
@@ -67,40 +67,45 @@ export function playerView() {
     return {
         p,
         o,
-        wp,
         f,
         src: p.srcs[p.k] || {},
         url: f.url,
         hls: isHLS(f.url),
-        hasNext: !!hasNext,
+        hasNext: !!hasNext && p.e != null,
+        cinema: (o.layout || "docked") === "cinema",
         showName: cleanTitle(p.show || p.title || ""),
         epTag,
-        epLine: epTag + (p.epTitle ? " — " + p.epTitle : ""),
+        epName: name,
+        epLine: epTag + (name ? " — " + name : ""),
         card: bItem ? bItem.id : "",
         canAdd: !bItem && !!sh?.title,
     };
 }
 export type PlayerView = NonNullable<ReturnType<typeof playerView>>;
 
-/** the server strip at the top (ServerStrip.svelte): an icon that lists them, Server 1 2 3…, still looking, + */
-export function srvStripView(p: WatchPlayer) {
-    const bad = p.failed || [];
+/** the one server button at the top: how many there are, whether one's playing, whether more are still being looked for */
+export function srvButtonView(p: WatchPlayer) {
+    const n = (p.srcs || []).length;
     return {
         open: !!p.srcOpen,
-        list: (p.srcs || []).map((x, i) => ({
-            i,
-            on: i === p.k,
-            bad: bad.includes(i),
-            title: `Server ${i + 1}: ${srvDesc(x)}${bad.includes(i) ? " (didn't play)" : ""}`,
-        })),
+        n,
         looking: (p.looking || 0) > 0,
+        title: n
+            ? `Servers: ${n} for this ${p.film ? "film" : "episode"}, playing ${srvDesc(p.srcs[p.k] || {})}`
+            : "Servers",
     };
 }
-/** the list of servers for this episode (SourcesPanel.svelte) */
+/** the list of servers for this episode (SourcesPanel.svelte), with what your media servers said about this show
+ *  ("On Living room (6 episodes)", or why not) and a way to pick the right title on them by hand */
 export function sourcesView(p: WatchPlayer) {
     const bad = p.failed || [];
     return {
         what: p.film ? "film" : "episode",
+        looking: (p.looking || 0) > 0,
+        lib:
+            LIBS().length && W.libNote
+                ? { note: W.libNote, miss: W.libMiss, pick: W.libMiss ? "Pick it…" : "Not the right one?" }
+                : null,
         rows: p.srcs.map((x, i) => ({
             i,
             on: i === p.k,
@@ -137,32 +142,42 @@ export function emptyView(p: WatchPlayer) {
         servers: "Servers for this show" + (n ? " · " + n : ""),
     };
 }
-/** the subtitles that came with this source (Tool.svelte's picker): Off, then each */
-export const subPickView = (p: WatchPlayer) => ({ list: p.subList || [], cur: p.subPick || "" });
+/** the subtitles' panel (SubsPanel.svelte): Off, the tracks that came with this source, and a file you loaded */
+export function ccView(p: WatchPlayer) {
+    return { list: p.subList || [], cur: p.subPick || "", file: !!p.subs };
+}
 
-/** the blocks beside the player and under it (CinBlocks.svelte): description, seasons, episodes, in your order */
+/** the blocks under the player and beside it (CinBlocks.svelte): the seasons with their episodes, and the description */
 export function blocksView(p: WatchPlayer) {
     const wp = WP(),
         sh = W.show,
-        li = p.listSi ?? p.si ?? 0,
+        si = p.si ?? 0,
+        li = p.listSi ?? si,
         S: WatchSeason = W.seasons[li] || { n: 1, label: "", eps: [] },
         P = loadPos(),
-        eps = S.eps || [];
+        eps = S.eps || [],
+        name = epName(si, p.e) || p.epTitle || "",
+        about = epAbout(si, p.e);
     const parts = {
-        about: wp.about && sh?.about ? sh.about.slice(0, 700) : "",
-        seasons:
-            W.seasons.length < 2
-                ? null
-                : {
-                      select: sh?.medium === "anime" || !!sh?.groupId,
-                      li,
-                      list: W.seasons.map((x, i) => ({ i, title: x.title || x.label, label: x.label, on: i === li })),
-                  },
+        about:
+            sh?.about || about
+                ? {
+                      ep: !p.film && p.e != null ? `Episode ${p.e}` + (name ? `: ${name}` : "") : "",
+                      epAbout: p.film ? "" : about,
+                      show: (sh?.about || "").slice(0, 900),
+                  }
+                : null,
         eps:
-            p.film || sh?.medium === "film"
+            p.film || sh?.medium === "film" || p.single
                 ? null
                 : {
-                      count: `${eps.filter(e => epWatched(li, e.e)).length}/${eps.length || "?"}`,
+                      // the header: the episode playing, by name, and where it is in its season (episode 3 of 12)
+                      name,
+                      at: li === si && p.e != null ? `${p.e}/${eps.length || S.total || "?"}` : `${eps.length || "?"}`,
+                      seasons:
+                          W.seasons.length > 1
+                              ? W.seasons.map((x, i) => ({ i, title: x.title || x.label, on: i === li }))
+                              : null,
                       kind: wp.eps,
                       loading: !!S.loading,
                       li,
@@ -172,10 +187,10 @@ export function blocksView(p: WatchPlayer) {
                           return {
                               e: e.e,
                               seen,
-                              on: li === p.si && e.e === p.e,
+                              on: li === si && e.e === p.e,
                               part: !!pos && !seen,
                               img: (wp.thumbs && (e.image || W.libImg.get(li + ":" + e.e))) || "",
-                              tip: e.title || "Episode " + e.e,
+                              tip: e.title && !/^Episode \d+$/i.test(e.title) ? `${e.e}. ${e.title}` : "Episode " + e.e,
                               title: e.title && !/^Episode \d+$/i.test(e.title) ? e.title : "Episode " + e.e,
                               about: wp.desc && e.about ? e.about.replace(/<[^>]+>/g, "").slice(0, 150) : "",
                           };
@@ -184,17 +199,13 @@ export function blocksView(p: WatchPlayer) {
     };
     const at = (where: string) =>
         wp.order.filter(
-            (k): k is "about" | "seasons" | "eps" =>
-                (k !== "about" || wp.about) &&
-                wp.place[k] === where &&
-                (k === "about" || k === "seasons" || k === "eps") &&
-                !!parts[k]
+            (k): k is "about" | "eps" => (k === "about" || k === "eps") && wp.place[k] === where && !!parts[k]
         );
-    return { parts, side: at("side"), main: at("main") };
+    return { parts, main: at("main"), side: at("side"), left: at("left") };
 }
 export type BlocksView = ReturnType<typeof blocksView>;
 
-/** "Customise this page" (PageOpts.svelte): the episode list, the blocks, sequels, and every button's place */
+/** the page's own settings (PageOpts.svelte): the episodes as numbers or detailed rows, and where each block goes */
 export function pageOptsView() {
     const p = WP();
     return {
@@ -204,64 +215,12 @@ export function pageOptsView() {
         blocks: p.order.map((k, i) => ({
             k,
             name: WP_NAMES[k] || k,
-            place: k === "about" && !p.about ? "off" : p.place[k],
+            place: p.place[k] || "main",
             first: i === 0,
             last: i === p.order.length - 1,
         })),
         sequels: meta.settings.seasonsMode === "separate" ? "separate" : "together",
-        tools: p.tools.map((k, i) => ({
-            k,
-            name: toolName(k) || "",
-            spot: spotOf(p, k),
-            first: i === 0,
-            last: i === p.tools.length - 1,
-        })),
     };
 }
-/** the edit bar (EditBar.svelte): the look's sliders, and the buttons hidden */
-export function editView() {
-    const wp = WP();
-    return {
-        look: LOOK(),
-        hidden: wp.tools.filter(k => spotOf(wp, k) === "off").map(k => ({ k, name: toolName(k) || k })),
-    };
-}
-/** the subtitle languages to pick from in the player's settings (PlayerOpts.svelte) */
+/** the subtitle languages to pick from (SubsPanel.svelte) */
 export const SUB_CHOICES: [string, string][] = [["off", "Off unless I pick them"], ...SUB_LANGS];
-/** whether a button has anything to show in the player as it is (while arranging, one that hasn't shows its name) */
-export function toolHas(v: PlayerView, k: string): boolean {
-    const p = v.p,
-        url = !!v.url;
-    switch (k) {
-        case "prev":
-            return p.e != null && !p.film;
-        case "back":
-        case "fwd":
-        case "subs":
-        case "speed":
-        case "pip":
-        case "full":
-        case "play":
-        case "time":
-        case "vol":
-            return url;
-        case "skip":
-            return url && !!v.o.skip;
-        case "ep":
-        case "gap":
-        case "cinema":
-        case "lights":
-        case "settings":
-            return true;
-        case "mark":
-            return p.e != null;
-        case "next":
-            return p.e != null && v.hasNext;
-    }
-    return false;
-}
-/** the buttons in one place: on the video, under it, or (with the browser's own controls) all of them in the bar */
-export function toolsAt(v: PlayerView, where: "video" | "under" | "bar"): string[] {
-    const wp = v.wp;
-    return where === "bar" ? wp.tools.filter(k => !wp.off.includes(k)) : wp.tools.filter(k => spotOf(wp, k) === where);
-}

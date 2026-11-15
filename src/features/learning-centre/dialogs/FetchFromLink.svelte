@@ -2,9 +2,10 @@
     src/features/learning-centre/dialogs/FetchFromLink.svelte
     ─────────────────────────────────────────────────────────────────
       Fetch from a link: a programme's page, a module list or a reading list (or its text, pasted), then a table of
-      what was found to check, fix, reorder and untick, then saved into the pathway (or one of its modules), or, from
-      Curricula, as a programme to compare. Where it's from and what's been found are the dialog's state (ui.modal:
-      pid, mid or cur, step, rows, into, chain, toLib); what's typed (the link, the pasted text) is this one's own.
+      what was found to check, fix, reorder and untick, then saved into the course (books into a topic at a level,
+      modules into its degree), or, from Curricula, as a programme. Where it's from and what's been found are the
+      dialog's state (ui.modal: pid, mid or cur, step, rows, into, lvl, chain, toLib); what's typed (the link, the
+      pasted text) is this one's own.
       Reading the page (lcRead and the parsers) and saving (lcSave) are in learning-import.ts: a fetched page or pasted
       text is someone else's, read row by row into plain text; nothing is saved until the second step.
     ─────────────────────────────────────────────────────────────────
@@ -14,16 +15,16 @@
     import { store } from "../../core/store.svelte";
     import { renderOverlay } from "../../core/modals";
     import DialogHead from "../../core/dialog/DialogHead.svelte";
-    import { lcMod, lcMove, PWS } from "../learning";
+    import { BOOK_LEVELS, lcMod, lcMove, lcSub } from "../learning";
+    import { lvlName, topicOptions } from "../pages/look";
     import { isLcImportModal, lcFetch, lcPaste, lcSave, lcSections, ROW_TEXT, type RowText } from "../learning-import";
     import type { LcImportModal } from "../learning-import";
-    import type { PathModule } from "../../core/model";
 
     const v = $derived.by(() => {
         const m = store.ui.modal;
         if (!isLcImportModal(m)) return null;
         void store.meta;
-        const P: { modules?: PathModule[] } | undefined = m.cur ? { modules: [] } : PWS().find(p => p.id === m.pid);
+        const P = lcSub(m.cur || m.pid);
         if (!P) return { gone: true as const }; // a literal (as const), so v.gone tells the two shapes apart
         const mod = lcMod(P, m.mid),
             rows = (m.rows || []).map(r => ({ ...r }));
@@ -31,7 +32,8 @@
             gone: false as const,
             m: { ...m },
             mod: mod ? [mod.code, mod.name].filter(Boolean).join(" ") : "",
-            mods: (P.modules || []).map(x => ({ id: x.id, name: [x.code, x.name].filter(Boolean).join(" ") })),
+            topics: topicOptions(P),
+            lvl: m.lvl || 2,
             rows,
             sections: lcSections(rows),
         };
@@ -112,9 +114,10 @@
             {#each R as r, i}<tr class={r.keep ? "" : "off"}><td><input type="checkbox" data-lcikeep={i} checked={r.keep} aria-label="Keep" onchange={e => row(i, "keep", e.currentTarget.checked)}></td>
                 {#if isM}<td>{@render cell(i, r, "stage", "110px", "Year 1")}</td><td>{@render cell(i, r, "code", "90px")}</td><td>{@render cell(i, r, "name", "100%; min-width:240px")}</td><td>{@render cell(i, r, "credits", "56px")}</td><td><input type="checkbox" data-lci={i} data-f="core" checked={r.core !== false} aria-label="Core" onchange={e => row(i, "core", e.currentTarget.checked)}></td>{:else}{#if v.sections.length}<td>{@render cell(i, r, "section", "120px")}</td>{/if}<td>{@render cell(i, r, "t", "100%; min-width:260px")}</td><td>{@render cell(i, r, "a", "170px")}</td><td>{@render cell(i, r, "year", "56px")}</td><td><select class="sel" data-lci={i} data-f="imp" aria-label="Importance" value={r.imp || ""} onchange={e => row(i, "imp", e.currentTarget.value)}>{#each IMP as [k, l]}<option value={k}>{l}</option>{/each}</select></td>{/if}
                 <td class="nowrap"><button class="linkbtn" data-act="lci-up" data-k={i} aria-label="Up" onclick={() => move(i, -1)}>↑</button><button class="linkbtn" data-act="lci-down" data-k={i} aria-label="Down" onclick={() => move(i, 1)}>↓</button></td></tr>{/each}</tbody></table></div>{/if}
-        {#if !isM && R.length}<div class="bar">{#if v.mod}<span class="hint">Into <b>{v.mod}</b></span>{:else}<label class="ctl">Put them <select class="sel" id="lci-into" value={m.into ?? (v.sections.length ? "@sections" : "")} onchange={e => store.dialog({ into: e.currentTarget.value })}>{#if v.sections.length}<option value="@sections">under a module per section</option>{/if}<option value="">outside any module</option>{#each v.mods as x (x.id)}<option value={x.id}>under {x.name}</option>{/each}</select></label>{/if}
+        {#if !isM && R.length}<div class="bar">{#if v.mod}<span class="hint">Into <b>{v.mod}</b></span>{:else}<label class="ctl">Topic <select class="sel" id="lci-into" value={m.into ?? (v.sections.length ? "@sections" : v.topics[0]?.id || "")} onchange={e => store.dialog({ into: e.currentTarget.value })}>{#if v.sections.length}<option value="@sections">a topic per section</option>{/if}{#each v.topics as x (x.id)}<option value={x.id}>{x.name}</option>{/each}<option value="">Readings</option></select></label>{/if}
+            <label class="ctl">Level <select class="sel" id="lci-lvl" value={String(v.lvl)} onchange={e => store.dialog({ lvl: Number(e.currentTarget.value) })}>{#each BOOK_LEVELS as l (l)}<option value={String(l)}>{lvlName(l)}</option>{/each}</select></label>
             <label class="ctl"><input type="checkbox" id="lci-chain" checked={m.chain !== false} onchange={e => store.dialog({ chain: e.currentTarget.checked })}> Read in this order (each waits for the one before to be underway)</label>
-            <label class="ctl"><input type="checkbox" id="lci-lib" checked={!!m.toLib} onchange={e => store.dialog({ toLib: e.currentTarget.checked })}> Also add them to my library, as planned</label></div>{/if}
+            <label class="ctl"><input type="checkbox" id="lci-lib" checked={!!m.toLib} onchange={e => store.dialog({ toLib: e.currentTarget.checked })}> Also add them to my library now (otherwise each joins when you start it)</label></div>{/if}
         <div class="bar" style="margin-top:10px"><button class="btn gold" data-act="lci-save" disabled={!n} onclick={() => { const l = live(); if (l) lcSave(l); }}>Add {n} {word(n, isM)}</button><button class="btn ghost" data-act="lci-back" onclick={back}>← Another link</button></div>
     {/if}
 {/if}

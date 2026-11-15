@@ -253,7 +253,15 @@ import type { Backdrop } from "../../src/features/backdrops/backdrop";
         __ulTest.meta.settings.worlds = [{ id: "old12345", name: "Old one", layers: [] }];
         __ulTest.meta.settings.builtins = { worlds: true };
         __ulTest.meta.themes!.oldtheme = { name: "Old theme", world: "mine:old12345" };
-        __ulTest.ACS().subjects.push({ id: "oldsub", name: "Old course", world: "arts", fields: {} });
+        __ulTest.ACS().courses.push({
+            id: "oldsub",
+            name: "Old course",
+            world: "arts",
+            fields: {},
+            topics: [],
+            books: [],
+            progs: [],
+        });
         __ulTest.migrateV10();
         return {
             mine: (__ulTest.meta.settings.backdrops as Backdrop[]).some(

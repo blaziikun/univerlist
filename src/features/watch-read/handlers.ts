@@ -24,12 +24,10 @@ import type { ActEl } from "../core/core";
 import { autoCovers } from "../sources/covers";
 import { renderMain } from "../core/shell";
 import {
-    cinClose,
     cinLayout,
     cinLights,
     cinSeasonPick,
     loadWatchSeason,
-    playerRedraw,
     PS,
     renderPlayer,
     savePos,
@@ -37,6 +35,7 @@ import {
     srcKey,
     srtToVtt,
     W,
+    watchBack,
     watchMark,
     watchOpen,
     watchPickFiles,
@@ -44,7 +43,7 @@ import {
     watchStart,
     watchStep,
 } from "./watch";
-import { cinFull, pcSeekBy, pcSeekTo, srvRemember } from "./player";
+import { cinFull, introSkip, panelToggle, pcSeekBy, pcSeekTo, pcToggle, srvRemember } from "./player";
 import { overlayNow } from "./player/overlay.svelte";
 import { stageChanged } from "./stage-state.svelte";
 import { stageOffNote, stageOn } from "../extensions/builtins";
@@ -200,8 +199,7 @@ export async function watchClick(
             return true;
         }
         case "cin-close":
-            cinClose();
-            if (ui.page === "watch") renderMain();
+            watchBack();
             return true;
         case "cin-season":
             cinSeasonPick(Number(k));
@@ -251,18 +249,15 @@ export async function watchClick(
             watchStart(si, e);
             return true;
         }
-        case "cin-pip": {
-            const v = video();
-            if (v && v.requestPictureInPicture) v.requestPictureInPicture().catch(() => {});
-            return true;
-        }
         case "cin-back":
-        case "cin-fwd":
-        case "cin-skip": {
+        case "cin-fwd": {
             const o = PS();
-            pcSeekBy(act === "cin-back" ? -o.seek : act === "cin-fwd" ? o.seek : o.skip);
+            pcSeekBy(act === "cin-back" ? -o.seek : o.seek);
             return true;
         }
+        case "cin-skip":
+            introSkip();
+            return true;
         case "pc-startover": {
             pcSeekTo(0);
             const o = overlayNow();
@@ -275,14 +270,9 @@ export async function watchClick(
         case "pc-next-cancel":
             if (W.player && W.player.upNextCancel) W.player.upNextCancel();
             return true;
-        case "pc-play": {
-            const v = video();
-            if (v) {
-                if (v.paused) v.play().catch(() => {});
-                else v.pause();
-            }
+        case "pc-play":
+            pcToggle();
             return true;
-        }
         case "pc-mute": {
             const v = video();
             if (v) {
@@ -290,20 +280,15 @@ export async function watchClick(
             }
             return true;
         }
-        // the player's panels open and close around what's playing, which carries on
+        // the player's panels open and close around what's playing, which carries on; one at a time
         case "cin-opts":
-            if (W.player) {
-                W.player.opts = !W.player.opts;
-                W.player.srcOpen = false;
-                playerRedraw();
-            }
+            panelToggle("opts");
+            return true;
+        case "cin-cc":
+            panelToggle("cc");
             return true;
         case "cin-srcs":
-            if (W.player) {
-                W.player.srcOpen = !W.player.srcOpen;
-                W.player.opts = false;
-                playerRedraw();
-            }
+            panelToggle("srcs");
             return true;
         case "cin-src-pick": {
             const p = W.player,

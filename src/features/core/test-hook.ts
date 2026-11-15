@@ -42,7 +42,10 @@ import * as exportZip from "../import-export/export-zip";
 import * as modePages from "../insights/mode-pages";
 import * as learning from "../learning-centre/learning";
 import * as learningCurricula from "../learning-centre/learning-curricula";
-import * as learningHub from "../learning-centre/learning-hub";
+import * as learningData from "../learning-centre/learning-data";
+import * as learningOrder from "../learning-centre/learning-order";
+import * as learningBuild from "../learning-centre/learning-build";
+import * as catalogue from "../learning-centre/catalogue/catalogue";
 import * as ambience from "../look/ambience";
 import * as ownSources from "../watch-read/own-sources";
 import * as watch from "../watch-read/watch";
@@ -130,18 +133,23 @@ const PARTS = [
     part(modePages, ["seasonState"]),
     part(learning, [
         "ACS",
-        "PWS",
+        "LCS",
+        "lcAddBook",
+        "lcCur",
+        "lcCurId",
         "lcMod",
-        "lcNewPath",
+        "lcNewCourse",
         "lcSub",
+        "lcTopic",
         "pwBucket",
-        "pwCur",
         "pwSetState",
-        "pwStages",
         "pwState",
     ]),
-    part(learningCurricula, ["curS", "curSid", "uniAddProgramme"]),
-    part(learningHub, ["lcMastery", "lcStripPersonal", "lcTopicWaits"]),
+    part(learningCurricula, ["uniAddProgramme"]),
+    part(learningData, ["lcConvertOld", "lcMerge", "lcStripPersonal"]),
+    part(learningOrder, ["lcNext", "lcOrder"]),
+    part(learningBuild, ["lcFetchAll", "lcFromCatalogue"]),
+    part(catalogue, ["catFind"]),
     part(ambience, ["ambApply"]),
     part(ownSources, ["isOwnSource"]),
     part(watch, [

@@ -25,6 +25,7 @@ import { renderMain, renderSide, renderTop } from "./shell";
 import { FILT_EMPTY } from "../library/library";
 import { addDefaults, openModal, overlayTyping, renderOverlay } from "./modals";
 import { renderPlayer, savePos, W } from "../watch-read/watch";
+import { routePlayer } from "../watch-read/route";
 import { stageOn } from "../extensions/builtins";
 import { RD, renderReader } from "../watch-read/read";
 import { tierSel } from "../library/tiers";
@@ -158,6 +159,7 @@ export function closeSettings() {
         W.player = f.player;
         f.player = null;
         renderPlayer();
+        routePlayer(); // its address too, so a refresh still finds it
     }
 }
 export function goSettings(sec?: string) {

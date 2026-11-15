@@ -23,19 +23,20 @@
 //  address and in total (SHARED_RL, SHARED_ALL in wrangler.jsonc). Every other key is yours alone: inside the site it
 //  answers only with PASS. Keys never leave this Worker.
 //
-//  Needs no key: /status (which sources are set up) and /page (a university or reading-list page, for the Learning
-//  Centre; handed back as plain text, so nothing fetched can ever run or display as a page of this site).
+//  Needs no key: /status (which sources are set up), /page (a university or reading-list page, for the Learning
+//  Centre; handed back as plain text, so nothing fetched can ever run or display as a page of this site) and /aniskip
+//  (where an anime episode's opening starts and ends, from AniSkip, for the player's Skip intro).
 // ─────────────────────────────────────────────────────────────────
 
 // ═══════════════════════════════════════════
 //  WHAT IT ANSWERS
 // ═══════════════════════════════════════════
 
-const OPEN = ["page", "status"];
+const OPEN = ["page", "status", "aniskip"];
 const LENT = ["tmdb", "igdb"];
 const OWN = ["sgdb", "tgdb", "cv", "hc", "ss"];
 // only the lookups the app makes, with only the settings it sends
-const TMDB_PATHS = /^(configuration|search\/(movie|tv)|(movie|tv)\/\d+(\/images)?)$/;
+const TMDB_PATHS = /^(configuration|search\/(movie|tv)|(movie|tv)\/\d+(\/images)?|tv\/\d+\/season\/\d+)$/;
 const TMDB_PARAMS: Record<string, (v: string) => boolean> = {
     query: v => v.length <= 200,
     include_adult: v => v === "true" || v === "false",
@@ -355,6 +356,15 @@ export async function proxy(req: Request, env: ProxyEnv, base = ""): Promise<Res
             { "Cache-Control": "private, max-age=3600" }
         );
 
+    // where an episode's opening is (AniSkip: by MyAnimeList id and episode), for the player's Skip intro. No key, but
+    // the Worker's work all the same: only for the site's own pages, each answer kept a day for everyone
+    if (route === "aniskip") {
+        if (inSite && !ownPage && !passed) return say(403, "only for this site's own pages");
+        if (req.method !== "GET" || !/^\d{1,7}\/\d{1,5}$/.test(rest)) return say(400, "bad request");
+        return once(`${url.origin}${base}/aniskip/${rest}`, "aniskip", req, env, () =>
+            fetch(`https://api.aniskip.com/v2/skip-times/${rest}?types=op&types=mixed-op&episodeLength=0`)
+        );
+    }
     if (route === "tmdb") {
         if (!env.TMDB_KEY) return need("TMDB_KEY");
         if (req.method !== "GET" || !TMDB_PATHS.test(rest)) return say(400, "bad request");

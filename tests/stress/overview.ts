@@ -6,7 +6,7 @@ import ENV from "../e2e/env.ts";
 import { chromium } from "playwright";
 import { setup } from "../e2e/mocks.ts";
 import { ok, evaluator } from "../e2e/helpers.ts";
-import type { Courses, Curriculum, Item } from "../../src/features/core/model";
+import type { Courses, Item } from "../../src/features/core/model";
 const BUDGET = { overview: 900, change: 400, burst: 1000, courses: 400, course: 600, curricula: 4000 }; // ms (Curricula: about 2.7 s on the old HTML page too: it looks every set book up in your library)
 (async () => {
     const b = await chromium.launch(ENV.launch),
@@ -69,15 +69,19 @@ const BUDGET = { overview: 900, change: 400, burst: 1000, courses: 400, course: 
         __ulTest.meta.queue = Object.keys(add)
             .filter((_, i) => i % 400 === 2)
             .slice(0, 20);
-        // the Learning Centre: 40 courses, each a pathway of 300 readings that wait on each other, 60 modules over 4 years
-        const subjects: Courses["subjects"] = [],
-            paths: Courses["paths"] = [],
-            curricula: Record<string, Curriculum> = {};
+        // the Learning Centre: 40 courses, each with 300 books over 50 topics and four levels that wait on each other,
+        // a degree of 60 modules over 4 years, and 20 programmes of 30 modules with their reading lists
+        const courses: Courses["courses"] = [];
         for (let s = 0; s < 40; s++) {
             const id = "s" + s,
                 books = [],
                 modules = [],
-                stages = [0, 1, 2, 3].map(y => ({ id: id + "y" + y, name: "Year " + (y + 1) }));
+                stages = [0, 1, 2, 3].map(y => ({ id: id + "y" + y, name: "Year " + (y + 1) })),
+                topics = Array.from({ length: 50 }, (_, t) => ({
+                    id: id + "t" + t,
+                    name: "Topic " + t,
+                    area: "Area " + (t % 8),
+                }));
             for (let m = 0; m < 60; m++)
                 modules.push({
                     id: id + "m" + m,
@@ -89,23 +93,23 @@ const BUDGET = { overview: 900, change: 400, burst: 1000, courses: 400, course: 
                     status: ["planned", "taking", "done"][m % 3],
                     grade: m % 3 === 2 ? "65" : "",
                     term: "",
-                    topics: [0, 1, 2, 3, 4].map(t => ({ t: "Topic " + ((m * 5 + t) % 200), done: t % 2 === 0 })),
-                    after: m > 4 ? [id + "m" + (m - 4)] : undefined,
                 });
             for (let k = 0; k < 300; k++)
                 books.push({
                     id: id + "b" + k,
                     t: "Reading " + k + " of " + s,
                     a: "Author " + (k % 37),
+                    topic: id + "t" + (k % 50),
+                    tops: k % 9 === 0 ? [id + "t" + ((k + 7) % 50)] : undefined,
+                    lvl: 1 + (k % 4),
+                    ord: k,
                     mod: id + "m" + (k % 60),
-                    th: "",
                     st: ["todo", "reading", "done"][k % 3],
-                    note: "",
                     after: k > 2 ? [{ k: id + "b" + (k - 3), s: k % 2 ? "done" : "start" }] : [],
                     opt: k % 11 === 0,
                     top: k % 50 === 0,
                 });
-            subjects.push({
+            courses.push({
                 id,
                 name: "Course " + s,
                 g: "C",
@@ -113,53 +117,29 @@ const BUDGET = { overview: 900, change: 400, burst: 1000, courses: 400, course: 
                 order: [0, 1, 2, 3, 4, 5].map(f => "Field " + f),
                 goal: 3,
                 kind: s % 2 ? "arts" : "sci",
-            });
-            paths.push({
-                id: "p" + s,
-                name: "Course " + s,
-                sub: id,
+                degree: true,
                 uni: "University " + s,
-                programme: "Programme",
-                url: "",
-                about: "About course " + s,
-                method: "Rule one\nRule two",
-                goals: [],
-                view: "modules",
-                threads: [],
                 stages,
                 modules,
+                topics,
                 books,
-                at: new Date().toISOString(),
+                progs: Array.from({ length: s ? 0 : 20 }, (_, g) => ({
+                    id: "g" + g,
+                    uni: "Uni " + (g % 7),
+                    name: "Programme " + g,
+                    modules: Array.from({ length: 30 }, (_, m) => ({
+                        name: "Module " + m,
+                        core: m % 2 === 0,
+                        topics: [id + "t" + ((g * 7 + m * 3) % 50), id + "t" + ((g + m * 11) % 50)],
+                        books: [
+                            ["Book " + ((g * 13 + m) % 400), "Author " + (m % 50)],
+                            ["Reading " + m + " of 0", "Author " + (m % 37)],
+                        ] as [string, string][],
+                    })),
+                })),
             });
         }
-        const topics = Array.from({ length: 200 }, (_, t) => ({
-                id: "t" + t,
-                name: "Topic " + t,
-                area: "Area " + (t % 8),
-            })),
-            bk: Record<string, [string, string]> = {};
-        for (let k = 0; k < 400; k++) bk["k" + k] = ["Book " + k, "Author " + (k % 50)];
-        curricula.s0 = {
-            topics,
-            books: bk,
-            chosen: { t1: "k1", t5: "k9" },
-            extra: {},
-            hide: [],
-            progs: Array.from({ length: 20 }, (_, g) => ({
-                id: "g" + g,
-                uni: "Uni " + (g % 7),
-                name: "Programme " + g,
-                kind: "mine",
-                why: "",
-                modules: Array.from({ length: 30 }, (_, m) => ({
-                    name: "Module " + m,
-                    core: m % 2 === 0,
-                    topics: ["t" + ((g * 7 + m * 3) % 200), "t" + ((g + m * 11) % 200)],
-                    books: ["k" + ((g * 13 + m) % 400), "k" + ((g + m * 5) % 400)],
-                })),
-            })),
-        };
-        __ulTest.meta.courses = { v: 2, subjects, paths, curricula };
+        __ulTest.meta.courses = { v: 3, courses, gone: {} };
         const md = __ulTest.curMode();
         md.blocks = Object.keys(__ulTest.BLOCKS)
             .filter(k => (__ulTest.BLOCKS[k].only ? __ulTest.BLOCKS[k].only(md) : true))
@@ -212,13 +192,12 @@ const BUDGET = { overview: 900, change: 400, burst: 1000, courses: 400, course: 
         burst + " ms"
     );
 
-    // set: what to put in ui first; view: the first course's view; tab: the page drawn
-    const lc = (set: Partial<typeof __ulTest.ui>, view = "", tab = "learn") =>
+    // set: what to put in ui first; tab: the page drawn
+    const lc = (set: Partial<typeof __ulTest.ui>, tab = "learn") =>
         ev(
-            ([set, view, tab]) => {
+            ([set, tab]) => {
                 __ulTest.setMode("academic");
                 Object.assign(__ulTest.ui, set);
-                if (view) __ulTest.meta.courses.paths[0].view = view;
                 __ulTest.ui.tab = "library";
                 __ulTest.render();
                 const t = performance.now();
@@ -226,23 +205,19 @@ const BUDGET = { overview: 900, change: 400, burst: 1000, courses: 400, course: 
                 __ulTest.render();
                 return { ms: Math.round(performance.now() - t), drawn: !!document.querySelector(".learn, .curr") };
             },
-            [set, view, tab]
+            [set, tab]
         );
-    let r = await lc({ learnSub: null, pwId: null, lcOpen: null });
+    let r = await lc({ lcHub: true, lcOpen: null });
     ok(`Courses with 40 courses draws in under ${BUDGET.courses} ms`, r.drawn && r.ms < BUDGET.courses, r.ms + " ms");
-    r = await lc({ learnSub: "s0", lcOpen: "s0m1" });
+    r = await lc({ lcHub: false, learnSub: "s0", lcOpen: "s0m1" });
     ok(
-        `a course with 300 readings and 60 modules (one open) draws in under ${BUDGET.course} ms`,
+        `a course with 300 books on its map, and a degree of 60 modules, draws in under ${BUDGET.course} ms`,
         r.drawn && r.ms < BUDGET.course,
         r.ms + " ms"
     );
-    for (const v of ["map", "stages", "threads"]) {
-        r = await lc({ learnSub: "s0", lcOpen: null }, v);
-        ok(`…in its ${v} view in under ${BUDGET.course} ms`, r.drawn && r.ms < BUDGET.course, r.ms + " ms");
-    }
-    r = await lc({ uniSub: "s0", uniView: "merged" }, "", "curricula");
+    r = await lc({ learnSub: "s0" }, "curricula");
     ok(
-        `Curricula with 20 programmes over 200 topics draws in under ${BUDGET.curricula} ms`,
+        `Curricula with 20 programmes of 30 modules draws in under ${BUDGET.curricula} ms`,
         r.drawn && r.ms < BUDGET.curricula,
         r.ms + " ms"
     );
@@ -253,7 +228,7 @@ const BUDGET = { overview: 900, change: 400, burst: 1000, courses: 400, course: 
                 ["universal", "overview"],
                 ["academic", "learn", "s0"],
                 ["academic", "curricula"],
-                ["academic", "learn", null],
+                ["academic", "learn", "s1"],
                 ["universal", "library"],
             ];
             for (const [mode, tab, x] of R) {

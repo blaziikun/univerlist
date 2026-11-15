@@ -48,7 +48,8 @@ import { TMDB_ON } from "../sources/proxy";
 import { kindOf, kindShown } from "./types";
 import { partsOf, partsScore } from "./parts";
 import { renderMain } from "./shell";
-import { pwLib, PWS, pwStages } from "../learning-centre/learning";
+import { LCS, pwLib } from "../learning-centre/learning";
+import { lcOrder } from "../learning-centre/learning-order";
 import { seasonStem } from "../watch-read/watch";
 import type { Entry, Item, ItemDraft, LogEntry, Mode } from "./model";
 
@@ -356,20 +357,18 @@ export function sortBy(key: string): (a: Entry, b: Entry) => number {
                 (a.id < b.id ? -1 : a.id > b.id ? 1 : 0);
     }
 }
-// reading and watch order: a Learning Centre book goes where its pathway puts it; anything in a series goes with its series,
+// reading and watch order: a Learning Centre book goes where its course's reading order puts it; anything in a series goes with its series,
 // in release order or, when you've set it, story order (Settings for this: the ⋯ by the views, "Story order")
 function readingOrder() {
     const pos = new Map<string, number>();
-    if (typeof PWS !== "function") return pos;
+    if (typeof LCS !== "function") return pos;
     let i = 0;
-    for (const P of PWS()) {
-        const stg = pwStages(P);
-        for (const b of P.books.slice().sort((x, y) => (stg[x.id] || 0) - (stg[y.id] || 0))) {
+    for (const C of LCS())
+        for (const b of lcOrder(C)) {
             const id = pwLib(b);
             if (id && !pos.has(id)) pos.set(id, i);
             i++;
         }
-    }
     return pos;
 }
 function orderKey(b: Entry, pos: Map<string, number>): [number, string, number] {

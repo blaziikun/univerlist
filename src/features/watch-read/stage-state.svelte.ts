@@ -5,7 +5,7 @@
 //  Watch & read keep their state in plain objects the older code changes in place (W, RD, RLS…), so the components
 //  can't see a change by themselves. They draw when the older code asks them to, exactly as often as the HTML was
 //  redrawn, and not on every change to your library: renderMain() for the Watch and Read pages, renderPlayer() for the
-//  whole player (a new <video>), and the smaller asks for a part of it (the list beside it, its server strip, its
+//  whole player (a new <video>), and the smaller asks for a part of it (the list beside it, its server button, its
 //  subtitles, the Watched tick); renderReader() for the reader. Asking bumps a number here that only those components
 //  read, and draws at once (so code that redraws and then reads the page finds it drawn, as it did the HTML).
 //  This module imports nothing of the app's, so the older modules can use it (they can't import the store).
@@ -45,15 +45,15 @@ export const stageNews = {
     get player() {
         return tick.player;
     },
-    /** the blocks beside and under the player, and "Customise this page" (cinSideRedraw) */
+    /** the blocks beside and under the player, and this page's settings (cinSideRedraw) */
     get side() {
         return tick.side;
     },
-    /** the server strip at the top of the player (srvRefresh) */
+    /** the server button at the top of the player (srvRefresh) */
     get srv() {
         return tick.srv;
     },
-    /** the subtitle picker under the player (subRefresh) */
+    /** the subtitles' panel (subRefresh) */
     get subs() {
         return tick.subs;
     },

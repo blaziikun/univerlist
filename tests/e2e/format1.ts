@@ -35,8 +35,8 @@ import { ok } from "./helpers.ts";
         queue: __ulTest.meta.queue.length,
         lists: __ulTest.meta.lists.length,
         prog:
-            __ulTest.meta.courses.v === 2
-                ? __ulTest.meta.courses.paths.length
+            __ulTest.meta.courses.v === 3
+                ? __ulTest.meta.courses.courses.length
                 : JSON.stringify(__ulTest.meta.courses).slice(0, 80),
         theme: !!(__ulTest.meta.themes || {}).mine,
         name: (__ulTest.meta.profile || {}).name,

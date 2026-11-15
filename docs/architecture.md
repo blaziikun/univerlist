@@ -44,7 +44,8 @@ src/
 │   ├── import-export/ imports, backups, the export format, the Download everything dialog
 │   ├── insights/      Insights and each mode's own pages (pages/, Svelte), Discover (discover/), Pick for me
 │   │                  (pick/), your taste
-│   ├── learning-centre/ courses, pathways, curricula; its pages (pages/, Svelte) and dialogs (dialogs/, Svelte)
+│   ├── learning-centre/ courses (topics, books by level, reading order), Curricula, the catalogue (catalogue/); its
+│   │                  pages (pages/, Svelte) and dialogs (dialogs/, Svelte)
 │   ├── watch-read/    the Watch and Read pages (page/, Svelte), the player (player/, Svelte), the reader (reader/,
 │   │                  Svelte), your servers, a show's servers (dialogs/, Svelte); the own-sources rule
 │   ├── extensions/    built-in parts you can switch off, and extensions you add
@@ -93,7 +94,7 @@ servers) are in `core/model.ts`, and every module is typed against it. Anything 
 a catalogue's answer, a media or reading server, a file you open) arrives as `unknown` and is checked by a small guard
 (`isRecord`, `isStatus`, `asSnapshot`, `at`, `fieldsOf`, `textOf` in `core/core.ts`) before it's used. Files you import
 are read as hostile: every part of one is checked as it's brought in (`import-export/packs.ts`, `applyParts`), a
-Learning Centre from a file is checked by `learning-centre/learning.ts` (`lcConvertOld`), and a book or comic you open
+Learning Centre from a file is checked by `learning-centre/learning-data.ts` (`lcConvertOld`), and a book or comic you open
 by `watch-read/read.ts` (`readStart`, `epubChapters`).
 
 **The test hook** (`core/test-hook.ts`) is for the tests, and only in the builds they run. The browser tests and
@@ -220,7 +221,11 @@ change to your library. `watch-read/stage-state.svelte.ts` keeps a number per pa
 pages, `"res"` for a search's results alone, `"video"` for a new `<video>`, `"player"`, `"side"`, `"srv"`, `"subs"`,
 `"mark"`, `"look"` for parts of the player, `"reader"` and `"rdlive"` for the reader), and each component reads only its
 own. The older functions keep their names and ask: `renderPlayer()` (a new video), `playerRedraw()` (the player around
-it), `srvRefresh()`, `subRefresh()`, `renderReader()`. Background work Settings › Data reports on (artwork, crowd
+it), `srvRefresh()`, `subRefresh()`, `renderReader()`. The player's own place is
+its address (`watch-read/route.ts`: `#watch/<show>/<season>/<episode>`): opening it adds one step to the history,
+the next episode only rewrites it, Back (the player's, Escape or the browser's) takes the step away, and a refresh opens
+the same episode (`routeRestore()`, called as the app starts). The app keeps no other address: everything else a
+refresh puts back comes from the tab's session storage (`core/tabs.ts`). Background work Settings › Data reports on (artwork, crowd
 scores, an AniList sync, reading LaunchBox's database) asks the same way, through `sources/work-state.svelte.ts`
 (`renderAutoStatus()`, `renderAlStatus()`): only its line in Settings draws again for each step.
 
@@ -228,15 +233,21 @@ scores, an AniList sync, reading LaunchBox's database) asks the same way, throug
 never on `timeupdate`. What changes while it plays is written straight to the elements by code the components attach
 (`{@attach}`), kept in one place each:
 - `watch-read/player/video.ts` (`videoRig`): the `<video>` itself. Its source, HLS, where to start, the resume chip and
-  Up next, keeping the place when the page around it changes. A `<video>` that Svelte recreated would start again from
-  the beginning (and reload the stream), so the player's `{#key}` is the video's own news (`stageNews.video`), and
-  nothing else replaces it: the settings, the servers, the Watched tick, moving a button or the cinema's episode list
-  draw around it. What a video was made with (its address, custom controls or the browser's, autoplay) is kept on it
-  (`W.player.frame`); a change that needs another video asks for one (`playerRedraw()` compares).
-- `watch-read/player.ts` (`pcPart`, `pcBind`, `pcDraw`): the custom controls' play button, time, scrub bar and volume.
-  Each registers its element; the video's own events (`timeupdate`, `progress`, `play`, `pause`, `seeking`…,
-  `volumechange`) write them.
-  Drawing them through state would redraw the bar four times a second.
+  Up next, Skip intro's window, keeping the place when the page around it changes. A `<video>` that Svelte recreated
+  would start again from the beginning (and reload the stream), so the player's `{#key}` is the video's own news
+  (`stageNews.video`), and nothing else replaces it: the settings, the servers, the Watched tick, cinema mode (the
+  stage is the same element in both layouts; only classes change) or the blocks around it draw around it. What a video
+  was made with (its address, autoplay) is kept on it (`W.player.frame`). When a video goes (another episode or server,
+  the player closing), its attachment's teardown removes every listener it added and stops it and lets go of its stream
+  (`videoRelease`), so an old one still loading can never start playing under the new one.
+- `watch-read/player.ts` (`pcPart`, `pcBind`, `pcDraw`, `tapZones`): the controls' play button, time, scrub bar and
+  volume, and what a press on the picture does (the middle plays or pauses; a double press on a side jumps). Each
+  registers its element; the video's own events (`timeupdate`, `progress`, `play`, `pause`, `seeking`…,
+  `volumechange`) write them. Drawing them through state would redraw the bar four times a second.
+- `watch-read/player/subtitles.ts` (`subWatch`): the player draws subtitles itself. A track the rest of the code sets
+  "showing" is taken over (kept "hidden", so its cues still arrive) and its lines are written into `.pc-subtext`, which
+  follows the size, height and background settings in every browser (most ignore a page's `::cue` styles). In an
+  iPhone's own full screen, which only draws the browser's way, the track shows natively until you come out of it.
 - The overlay over the video (buffering, the slow-start card, the resume chip, Up next, an error) is a small `$state`
   class (`player/overlay.svelte.ts`), written by the stream code (`stream.ts`, `streamAttach`): it changes on network
   events, not on frames.

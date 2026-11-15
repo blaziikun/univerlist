@@ -368,54 +368,77 @@ export interface ResolvedTheme extends Theme {
     glow: number;
 }
 
-/** the Learning Centre (meta.courses): your courses, the pathway through each, and the programmes you compare */
+/** the Learning Centre (meta.courses): your courses, the one it opens on, and what was deleted (so a sync or an import
+ *  doesn't bring it back) */
 export interface Courses {
-    v: 2;
-    subjects: Course[];
-    paths: Pathway[];
-    curricula?: Record<string, Curriculum>; // by course
+    v: 3;
+    courses: Course[];
+    def?: string; // the default course
+    gone?: Record<string, string>; // what was deleted (a course, a book in one, a programme), by id: when
 }
-/** a course: what you're learning, a degree subject or an interest */
+/** a course: a subject or a narrower topic, its topics, the books placed by topic and level, the order they wait on
+ *  each other in, the programmes it was built from, and, if it's a degree you're taking, its modules and marks */
 export interface Course {
     id: string;
     name: string;
     g?: string; // its symbol
     kind?: string; // "sci" (Academic) or "arts" (Interests)
-    fields: Record<string, { lvl: number; at?: string; [field: string]: unknown }>; // your level in each field (LEVELS)
-    order?: string[]; // the fields, in order
-    goal?: number; // the level you're aiming for
     hidden?: boolean;
-    sources?: { id: string; kind: string; name: string; url?: string; note?: string }[]; // the best places to learn it
+    now?: number; // your level now (LEVELS)
+    goal?: number; // the level you're aiming for
+    fields: Record<string, { lvl: number; at?: string; [field: string]: unknown }>; // your level in each field
+    order?: string[]; // the fields, in order
+    scope?: string; // what it was built from in the catalogue: a subject ("maths"), or one of its topics ("aero/propulsion")
+    topics: LcTopic[];
+    books: PathBook[];
+    progs: CurProgramme[]; // the programmes it was built from (Curricula)
+    degree?: boolean; // a degree you're taking: its modules, credits and marks show
+    // the degree: its university and programme, its stages (years, parts) and modules, what it takes to graduate
+    uni?: string;
+    programme?: string;
+    url?: string;
+    about?: string;
+    stages?: { id: string; name: string; spec?: boolean }[];
+    modules?: PathModule[];
+    req?: Record<string, number | undefined>;
+    // what earlier versions showed and this one doesn't, kept so nothing is lost on export and import
+    sources?: { id: string; kind: string; name: string; url?: string; note?: string }[];
     opps?: { id: string; t: string; when?: string; url?: string; done?: boolean; note?: string }[]; // yours only
+    kept?: Record<string, unknown>;
     [field: string]: unknown;
 }
-/** a reading waits until another is underway ("start"), done ("done"), or one of its parts is done ("part", p) */
+/** a topic of a course, in an area ("Analysis", "Propulsion") */
+export interface LcTopic {
+    id: string;
+    name: string;
+    area?: string;
+}
+/** a book waits until another is underway ("start"), done ("done"), or one of its parts is done ("part", p) */
 export interface PathCond {
     k: string;
     s: string;
     p?: number;
 }
-/** a reading on a pathway: its title and author as the list gave them, and the entry it is in your library */
+/** a book in a course: its title and author as the list gave them, its topic and level, and the entry it is in your
+ *  library */
 export interface PathBook {
     id: string;
     t: string;
     a?: string;
     year?: string | number;
     isbn?: string;
-    mod?: string; // its module
-    th?: string; // its thread (its module's name by default)
+    topic?: string; // its topic's id
+    tops?: string[]; // other topics it serves
+    lvl?: number; // 1 Foundations, 2 Undergraduate, 3 Master's, 4 PhD
+    ord?: number; // its place in the reading list it came from
+    mod?: string; // its module, in a degree
     st?: string; // todo, reading, done, skip
-    note?: string;
     after?: PathCond[];
     lib?: string;
     parts?: { t: string; done?: boolean }[];
     ref?: boolean; // for reference only
     opt?: boolean;
-    free?: boolean; // free online
-    top?: boolean; // crème de la crème
-    self?: boolean; // best for self-study
-    where?: string; // the topic it was picked for
-    _dupe?: string; // its label when two share a surname (worked out as it's drawn)
+    top?: boolean; // ★ one of the best
     [field: string]: unknown;
 }
 /** a topic a module covers, and the topics it waits on */
@@ -424,7 +447,7 @@ export interface PathTopic {
     done?: boolean;
     after?: string[];
 }
-/** a module of a programme: in a stage, with its topics and the modules it waits on */
+/** a module of a degree: in a stage, with its credits, status and mark */
 export interface PathModule {
     id: string;
     stage: string;
@@ -439,45 +462,27 @@ export interface PathModule {
     after?: string[];
     [field: string]: unknown;
 }
-/** a course's pathway: its readings, in stages and modules */
-export interface Pathway {
-    id: string;
+/** a module of a programme a course was built from: the topics it teaches and its reading list */
+export interface CurModule {
     name: string;
-    sub: string; // its course
-    uni?: string;
-    programme?: string;
-    url?: string;
-    about?: string;
-    method?: string;
-    goals?: { id: string; t: string; date?: string; done?: boolean }[]; // milestones
-    view?: string;
-    threads?: string[];
-    stages?: { id: string; name: string; spec?: boolean }[];
-    modules?: PathModule[];
-    books: PathBook[];
-    at?: string;
-    merged?: Record<string, unknown>[]; // the pathways that were joined into this one
-    req?: Record<string, number | undefined>; // what it takes to graduate: options, credits
+    code?: string;
+    core?: boolean;
+    lvl?: number;
+    topics?: string[]; // the course's topic ids
+    books?: [title: string, author: string][];
+    list?: string; // its reading list's page
     [field: string]: unknown;
 }
-/** what different programmes teach in one course (Curricula) */
-export interface Curriculum {
-    topics: { id: string; name: string; area?: string }[];
-    books: Record<string, [title: string, author: string]>; // by key
-    progs: CurProgramme[];
-    chosen: Record<string, string>; // your book for each topic
-    extra: Record<string, [key: string, title: string, author: string][]>; // books you added, by topic
-    hide: string[]; // programmes left out of the comparison
-}
-/** a programme compared in Curricula: its modules, each teaching some topics and setting some books */
+/** a programme a course was built from: a university's modules, each teaching some topics with a reading list */
 export interface CurProgramme {
     id: string;
     uni: string;
     name: string;
-    kind?: string; // "mine", "specialist"
-    why?: string;
-    url?: string;
-    modules: { name: string; core?: boolean; topics?: string[]; books?: (string | string[])[] }[];
+    url?: string; // the page that lists its modules
+    src?: string; // where its reading lists are printed, when that isn't a page that can be read (a PDF)
+    lvl?: number;
+    modules: CurModule[];
+    got?: { at: string; n: number; err?: string }; // when its pages were last fetched, and what came of it
     [field: string]: unknown;
 }
 
@@ -949,22 +954,16 @@ export interface Ui {
     tasteMore?: Record<number, { busy?: boolean; err?: string; res: Candidate[] }>; // Your taste: each "Find more"
     tasteRes?: Record<string, Candidate>; // …and what it found, by AniList id
     wpOpts?: boolean;
-    wpEdit?: boolean; // the player is being arranged ("Edit on the page")
     watchServers?: boolean; // Watch's servers panel is open
     readServers?: boolean; // …and Read's
     libPick?: ServerPick | null; // choosing by hand which title on your media servers a show is
     rlPick?: ServerPick | null; // …and which series on your reading servers a book is
     libTest?: Record<string, "…" | { ok: boolean; t: string }>; // each server's Test: still going, or what it said
-    // the Learning Centre: the course and pathway open, the module unfolded, what's compared, Curricula's choices
+    // the Learning Centre: the course open (else the default), all courses instead, deleting one, the module unfolded
     learnSub?: string | null;
-    pwId?: string | null;
+    lcHub?: boolean;
     learnDel?: string | null;
     lcOpen?: string | null;
-    lcCmp?: string | null;
-    uniSub?: string;
-    uniView?: string;
-    uniPaste?: boolean;
-    uniTopics?: boolean;
     [field: string]: unknown;
 }
 
@@ -1043,6 +1042,7 @@ export interface WatchSource {
     ext?: string; // the extension that offered it
     info?: string; // a link that says how much of it has arrived (watch-read/stream.ts)
     subs?: SubTrack[];
+    type?: string; // what it is (a MIME type, maybe with codecs), so this browser tries what it can play first
 }
 /** what's playing: where in it, and which of its sources */
 export interface WatchPlayer {
@@ -1068,6 +1068,8 @@ export interface WatchPlayer {
     prefDone?: boolean; // your usual server for this show has had its turn
     opts?: boolean; // the player's settings are open
     srcOpen?: boolean; // …the list of servers
+    cc?: boolean; // …the subtitles' settings
+    intro?: { start: number; end: number } | null; // where the opening plays, when a source or AniSkip knows
     subs?: string; // a subtitle file you loaded (its blob: address)
     subFor?: string; // the source the subtitle list below is for
     subList?: SubTrack[];
@@ -1088,9 +1090,7 @@ export interface WatchPlayer {
 export interface PlayerFrame {
     url: string; // the address it plays ("" when there's nothing to play)
     yt: string; // a YouTube video's id
-    lay: string; // "docked" or "cinema"
-    custom: boolean; // the player's own controls on it
-    controls: boolean; // the browser's own controls
+    custom: boolean; // the player's own controls on it (everything but YouTube's own player)
     autoplay: boolean; // starting by itself (not when waiting until a stream won't stop)
 }
 /** an episode of the show open on the Watch page */

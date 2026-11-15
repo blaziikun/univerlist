@@ -37,6 +37,7 @@ import { applyTheme, resolveTheme, THEME_PRESETS } from "../core/theme";
 import { alSearch, filmSearchKeyless, olSearch, tmdbSearch, tvmazeSearch } from "../sources/sources";
 import { TMDB_ON } from "../sources/proxy";
 import { all, pct, progText } from "../core/views";
+import { gsLocal } from "../core/search";
 import { combineGroups, partsOf, seasonGroups } from "../core/parts";
 import { renderMain } from "../core/shell";
 import { themeList } from "../settings/settings";
@@ -51,8 +52,10 @@ import {
     watchOpen,
     watchStart,
     WP,
+    WP_PLACES,
     wpSave,
 } from "./watch";
+import { panelToggle } from "./player";
 import { LIBS } from "./medialibs";
 import { RD, readable, readFromItem } from "./read";
 import { RLIBS } from "./readlibs";
@@ -88,6 +91,7 @@ const SG: {
     rbusy: boolean;
     t: number; // counts searches, so an older answer arriving late is dropped
     timer?: ReturnType<typeof setTimeout>;
+    stop?: AbortController; // the catalogue lookups of the search before, cut short when you type on
 } = { cat: { watch: "all", read: "all" }, ri: 0, rq: "", rres: null, rbusy: false, t: 0 };
 const stageCovers = () => !!meta.settings.stageCovers;
 /** what's typed in Watch's or Read's search now */
@@ -119,7 +123,8 @@ export function stageResView(kind: StageKind) {
         busy = w ? W.busy : SG.rbusy,
         q = stageQ(kind);
     const have = (r: ReadResult) => {
-        if (w) return null;
+        // Watch: only what came from your library (it's listed first, and the catalogues' copies of it are left out)
+        if (w) return typeof r.id === "string" ? items.get(r.id) || null : null;
         const id =
             typeof r.id === "string" && items.has(r.id)
                 ? r.id
@@ -130,6 +135,8 @@ export function stageResView(kind: StageKind) {
     return {
         q,
         shown,
+        // still asking the catalogues, under what's already listed
+        more: shown === "list" && busy,
         covers: stageCovers(),
         rows: (shown === "list" && R ? R : []).map((r, i) => {
             const h = have(r);
@@ -344,33 +351,136 @@ export function mergeWatchResults(q: string, an: Candidate[], tv: Candidate[], f
     const strong = ranked.filter(x => x.s > 0);
     return (strong.length >= 3 ? strong : ranked).slice(0, 24).map(x => x.r);
 }
-// searching: as you type, without redrawing the page (so the box keeps your cursor)
-export async function watchSearch(q: string) {
+// ── Watch's search: names as you type, at once ──
+// Your own shows that match are listed the moment a key is pressed (your library, searched the way the search box
+// searches it), then what the catalogues find joins them as each one answers, never holding up the typing: the
+// lookups wait until you pause (a quarter of a second), the ones for what you typed before are cut short, and what
+// each catalogue said is kept for a few minutes, so typing back to an earlier word shows it again at once. Until a
+// word's own answers arrive, the answers for the start of it are narrowed to the names that still match.
+type WebAnswers = { an: Candidate[] | null; tv: Candidate[] | null; fl: Candidate[] | null; at: number };
+const WEB = new Map<string, WebAnswers>();
+const WEB_KEEP = 5 * 60e3;
+const webKey = (q: string) => SG.cat.watch + "|" + idTitle(q);
+const isShowish = (b: Entry) => isWatchable(b) && !(b.medium === "anime" && b.kind === "Music");
+/** your shows, films and anime whose names match, best first */
+export function watchLocal(q: string): Entry[] {
+    const cat = SG.cat.watch;
+    return gsLocal(q)
+        .filter(b => isShowish(b) && (cat === "all" || b.medium === cat))
+        .slice(0, 8);
+}
+// an entry of yours as a result: its id says it's yours (stagePick opens the entry itself)
+const asResult = (b: Entry): Candidate => ({
+    id: b.id,
+    title: b.title,
+    medium: b.medium,
+    kind: b.kind,
+    year: b.year,
+    cover: b.cover || undefined,
+    alt: b.alt,
+    ext: b.ext,
+});
+/** what the catalogues said for this search, or for the start of it while its own answers are on their way */
+function webFor(q: string): { list: Candidate[]; exact: boolean } {
+    const k = webKey(q),
+        now = Date.now();
+    for (const [key, a] of WEB) if (now - a.at > WEB_KEEP) WEB.delete(key);
+    const own = WEB.get(k);
+    if (own) return { list: mergeWatchResults(q, own.an || [], own.tv || [], own.fl || []), exact: true };
+    // the longest earlier search this one starts with, narrowed to the names that still match
+    let best: WebAnswers | null = null,
+        bestLen = 0;
+    for (const [key, a] of WEB) {
+        const bare = key.slice(key.indexOf("|") + 1);
+        if (key.startsWith(SG.cat.watch + "|") && k.startsWith(key) && bare.length > bestLen) {
+            best = a;
+            bestLen = bare.length;
+        }
+    }
+    if (!best) return { list: [], exact: false };
+    const words = idTitle(q).split(" ").filter(Boolean),
+        fits = (r: Candidate) => {
+            const hay = [r.title, r.alt?.en, r.alt?.romaji, r.alt?.native].map(x => idTitle(x || "")).join(" ");
+            return words.every(w => hay.includes(w));
+        };
+    return { list: mergeWatchResults(q, best.an || [], best.tv || [], best.fl || []).filter(fits), exact: false };
+}
+/** the list for what's typed now: your own first, then the catalogues' (without the ones you already have) */
+function watchList(q: string) {
+    const local = watchLocal(q),
+        web = webFor(q),
+        names = (x: { title: string; alt?: Candidate["alt"] }) =>
+            [x.title, x.alt?.en, x.alt?.romaji].filter((t): t is string => !!t).map(idTitle),
+        localNames = local.map(b => ({ keys: new Set(names(b)), year: Number(b.year) || 0 })),
+        // one of yours: the same catalogue id, or another catalogue's listing of it (the same name, within a year). Only
+        // the few listed above are compared, so this stays quick on every key however big the library is
+        sameId = (b: Entry, r: Candidate) =>
+            (["anilist", "mal", "tvmaze", "tmdb", "imdb"] as const).some(k => !!b.ext?.[k] && b.ext[k] === r.ext?.[k]),
+        yours = (r: Candidate) => {
+            if (!local.length) return false;
+            if (local.some(b => sameId(b, r))) return true;
+            const ks = names(r),
+                y = Number(r.year) || 0;
+            return localNames.some(l => ks.some(k => l.keys.has(k)) && (!y || !l.year || Math.abs(y - l.year) <= 1));
+        };
+    W.results = [...local.map(asResult), ...web.list.filter(r => !yours(r))].slice(0, 24);
+    return web.exact;
+}
+/** something typed into Watch's search: the names that match, now, and the catalogues asked a moment later */
+export function watchLive(q: string) {
     W.q = q;
     W.view = "home";
     SG.ri = 0;
     if (!q.trim()) {
+        SG.stop?.abort();
         W.results = null;
         W.busy = false;
         stageRefresh();
         return;
     }
+    const exact = watchList(q);
+    W.busy = !exact;
+    stageRefresh();
+}
+// searching the catalogues, without redrawing the page (so the box keeps your cursor): each answer joins the list
+// as it arrives
+export async function watchSearch(q: string) {
+    watchLive(q);
+    if (!q.trim()) return;
+    const k = webKey(q),
+        had = WEB.get(k);
+    if (had && Date.now() - had.at < WEB_KEEP && had.an && had.tv && had.fl) return;
+    SG.stop?.abort();
+    const stop = (SG.stop = new AbortController()),
+        signal = stop.signal,
+        cat = SG.cat.watch,
+        my = ++SG.t,
+        none: Candidate[] = [];
+    const got: WebAnswers = { an: null, tv: null, fl: null, at: Date.now() };
     W.busy = true;
     stageRefresh();
-    const cat = SG.cat.watch,
-        my = ++SG.t;
-    const none: Candidate[] = [];
-    const [tv, an, fl] = await Promise.all([
-        cat === "all" || cat === "tv" ? tvmazeSearch(q).catch(() => none) : none,
-        cat === "all" || cat === "anime" ? alSearch(q, "anime").catch(() => none) : none,
-        cat === "all" || cat === "film"
-            ? (TMDB_ON() ? tmdbSearch(q, "film") : filmSearchKeyless(q)).catch(() => none)
-            : none,
+    const arrive = (part: "an" | "tv" | "fl") => (list: Candidate[]) => {
+        if (signal.aborted) return;
+        got[part] = list;
+        WEB.set(k, got);
+        if (my !== SG.t || W.q !== q) return;
+        watchList(q);
+        W.busy = !(got.an && got.tv && got.fl);
+        stageRefresh();
+    };
+    await Promise.all([
+        (cat === "all" || cat === "tv" ? tvmazeSearch(q, signal).catch(() => none) : Promise.resolve(none)).then(
+            arrive("tv")
+        ),
+        (cat === "all" || cat === "anime"
+            ? alSearch(q, "anime", signal).catch(() => none)
+            : Promise.resolve(none)
+        ).then(arrive("an")),
+        (cat === "all" || cat === "film"
+            ? (TMDB_ON() ? tmdbSearch(q, "film", signal) : filmSearchKeyless(q, signal)).catch(() => none)
+            : Promise.resolve(none)
+        ).then(arrive("fl")),
     ]);
-    if (my !== SG.t) return;
-    W.results = mergeWatchResults(q, an, tv, fl); // the catalogues only: your library has no say in what a search finds
-    W.busy = false;
-    stageRefresh();
 }
 async function readSearch(q: string) {
     SG.rq = q;
@@ -474,58 +584,20 @@ export function stageClick(act: string, t: ActEl, k: string | undefined): boolea
         return true;
     }
     if (act === "wp-opts") {
-        ui.wpOpts = !ui.wpOpts;
-        cinSideRedraw();
+        panelToggle("page");
         return true;
     }
     if (act === "wp-place") {
         const p = WP(),
             v = t.dataset.v || "";
-        if (key === "about") p.about = v !== "off";
-        p.place = { ...p.place, [key]: v === "off" && key === "about" ? p.place.about : v };
-        if (v === "off" && key !== "about") p.place[key] = "off";
+        if (WP_PLACES.includes(v)) p.place = { ...p.place, [key]: v };
         wpSave(p);
         cinSideRedraw();
-        return true;
-    }
-    if (act === "wp-tool") {
-        const p = WP(),
-            i = p.tools.indexOf(key),
-            j = i + Number(t.dataset.d);
-        if (i < 0 || j < 0 || j >= p.tools.length) return true;
-        [p.tools[i], p.tools[j]] = [p.tools[j], p.tools[i]];
-        wpSave(p);
-        playerRedraw();
         return true;
     }
     if (act === "wp-reset") {
         meta.settings.watchPage = {};
         markDirty();
-        playerRedraw();
-        return true;
-    }
-    if (act === "wp-spot") {
-        const p = WP(),
-            spot = (p.spot = { ...(p.spot || {}) });
-        p.off = p.off.filter(x => x !== key);
-        if (t.dataset.v === "off") p.off.push(key);
-        else spot[key] = t.dataset.v || "";
-        wpSave(p);
-        playerRedraw();
-        cinSideRedraw();
-        return true;
-    }
-    if (act === "wp-edit") {
-        ui.wpEdit = !ui.wpEdit;
-        ui.wpOpts = false;
-        if (W.player) W.player.opts = false;
-        playerRedraw();
-        return true;
-    }
-    if (act === "wp-look-reset") {
-        const p = WP();
-        delete p.look;
-        wpSave(p);
         playerRedraw();
         return true;
     }
@@ -634,19 +706,25 @@ export function seasonsAcrossLibrary(together?: boolean) {
 }
 
 // ── what the page's own boxes do (page/StageHead.svelte, StageContinue.svelte) ──
-/** something typed into Watch's or Read's search: a search a moment later (at once for a letter or two). Typing on a
- *  show's page goes back to the results */
+/** something typed into Watch's or Read's search. Watch lists your own that match at once and asks the catalogues a
+ *  moment later; Read searches a moment later (at once for a letter or two). Typing on a show's page goes back to the
+ *  results */
 export function stageTyped(kind: StageKind, q: string) {
     clearTimeout(SG.timer);
     if (kind === "watch") {
-        W.q = q;
         if (W.view === "show") {
             W.view = "home";
             W.show = null;
+            W.q = q;
             renderMain();
         }
-    } else SG.rq = q;
-    SG.timer = setTimeout(() => (kind === "watch" ? watchSearch(q) : readSearch(q)), q.length < 2 ? 0 : 320);
+        // your own that match, at once; the catalogues when you pause
+        watchLive(q);
+        SG.timer = setTimeout(() => watchSearch(q), 250);
+        return;
+    }
+    SG.rq = q;
+    SG.timer = setTimeout(() => readSearch(q), q.length < 2 ? 0 : 320);
 }
 /** a key in the search box: ↑ ↓ move through the results, Enter opens the one marked (or searches), Escape empties the
  *  box and puts the page back as it was (a second Escape leaves the box). True when the key was one of these */

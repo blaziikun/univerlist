@@ -22,7 +22,7 @@
         void stageNews.page;
         return watchPageView();
     });
-    // what's typed now: "Continue watching" hides while there's a search
+    // what's typed now: "Continue watching" and the empty page's note hide while there's a search
     const typed = $derived.by(() => {
         void stageNews.page;
         void stageNews.res;
@@ -30,4 +30,4 @@
     });
 </script>
 
-<div class="watch stage"><StageHead kind="watch" />{" "}{#if v.servers}<WatchServers />{" "}{/if}{#if v.show}<ShowPage />{:else}<div id="sres"><StageResults kind="watch" /></div>{#if v.cont}<StageContinue c={v.cont} hidden={!!typed} />{/if}{#if v.browse}<LibBrowse />{/if}{" "}{#if v.empty}<div class="empty"><h3>Find something to watch</h3><p>Type above. Episodes come from TVmaze and AniList; you play your own files, links or servers.</p></div>{/if}{/if}</div>
+<div class="watch stage"><StageHead kind="watch" />{" "}{#if v.servers}<WatchServers />{" "}{/if}{#if v.show}<ShowPage />{:else}<div id="sres"><StageResults kind="watch" /></div>{#if v.cont}<StageContinue c={v.cont} hidden={!!typed} />{/if}{#if v.browse}<LibBrowse />{/if}{" "}{#if v.empty && !typed}<div class="empty"><h3>Find something to watch</h3><p>Type above. Episodes come from TVmaze and AniList; you play your own files, links or servers.</p></div>{/if}{/if}</div>

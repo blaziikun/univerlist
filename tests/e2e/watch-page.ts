@@ -26,7 +26,7 @@ const ZIP = ENV.EXPORT,
         __ulTest.watchFromItem(id);
     });
     await page.waitForFunction(() => __ulTest.W.seasons.length > 3, null, { timeout: 9000 }).catch(() => {});
-    ok("item opens player page", await ev(() => !!document.querySelector("#cinema .cin-side .cs-eps")));
+    ok("item opens player page", await ev(() => !!document.querySelector("#cinema .cin-mb .cs-eps")));
     await page.screenshot({ path: ENV.OUT + `/s_player0_${W}.png` });
     ok(
         "BSD seasons by release name",
@@ -42,15 +42,12 @@ const ZIP = ENV.EXPORT,
     await page.click('#cinema [data-act="wp-eps"][data-k="detailed"]');
     await page.waitForTimeout(150);
     ok("detailed", await ev(() => document.querySelectorAll("#cinema .cs-ep2").length > 5));
+    await page.click('#cinema [data-act="wp-place"][data-k="eps"][data-v="side"]');
+    await page.waitForTimeout(200);
+    ok("episodes beside the player", await ev(() => !!document.querySelector("#cinema .cin-side .cb-eps")));
     await page.click('#cinema [data-act="wp-place"][data-k="eps"][data-v="main"]');
     await page.waitForTimeout(200);
-    ok("episodes under the player", await ev(() => !!document.querySelector("#cinema .cin-mb .cb-eps")));
-    await page.click('#cinema [data-act="wp-spot"][data-k="lights"][data-v="off"]');
-    await page.waitForTimeout(200);
-    ok("toolbar: lights off", await ev(() => !document.querySelector('#cinema .cin-under [data-act="cin-lights"]')));
-    await page.click('#cinema [data-act="wp-tool"][data-k="next"][data-d="-1"]');
-    await page.waitForTimeout(200);
-    ok("toolbar order", await ev(() => __ulTest.WP().tools.indexOf("next") < __ulTest.WP().tools.indexOf("mark")));
+    ok("…and under it again", await ev(() => !!document.querySelector("#cinema .cin-mb .cb-eps")));
     await page.screenshot({ path: ENV.OUT + `/s_player2_${W}.png` });
     await page.screenshot({ path: ENV.OUT + `/s_bento_${W}.png` });
     await ev(() => {
@@ -77,12 +74,9 @@ const ZIP = ENV.EXPORT,
     await page.click('#cinema [data-act="cin-close"]');
     await page.waitForTimeout(300);
     ok(
-        "close → the show (one level up)",
-        await ev(() => !document.querySelector("#cinema") && __ulTest.W.view === "show" && !!__ulTest.W.show)
+        "close → straight back to Watch, no show page in between",
+        await ev(() => !document.querySelector("#cinema") && __ulTest.W.view === "home" && __ulTest.ui.page === "watch")
     );
-    await page.keyboard.press("Escape");
-    await page.waitForTimeout(200);
-    ok("…and Escape → watch home", await ev(() => __ulTest.W.view === "home" && __ulTest.ui.page === "watch"));
     ok(
         "mode theme back after leaving",
         await ev(() => {

@@ -190,10 +190,25 @@ const feed = (t: string, e: string) =>
     await p.keyboard.press("Escape");
     await p.waitForTimeout(200);
     ok(
-        "Escape: the show's page, its seasons and episodes",
+        "Escape: straight back to the search, as it was (no show page in between)",
         await ev(
             () =>
                 !document.querySelector("#cinema") &&
+                !document.querySelector(".wshow") &&
+                __ulTest.W.q === "White" &&
+                document.querySelector<HTMLInputElement>("#wq")!.value === "White" &&
+                document.querySelectorAll("#sres .sli").length > 0
+        )
+    );
+    // the show's own page: what Watch shows for a show whose player is closed (coming back to Watch mid-show)
+    await ev(() => {
+        __ulTest.W.view = "show";
+        __ulTest.renderMain();
+    });
+    ok(
+        "the show's page lists its seasons and episodes",
+        await ev(
+            () =>
                 document.querySelectorAll(".wseasons .chip").length === 2 &&
                 document.querySelectorAll(".weps .wep").length === 14
         )

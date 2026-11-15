@@ -20,14 +20,17 @@ import {
     ui,
 } from "./core";
 import type { Mode } from "./model";
-import { defaultTabsFor, EXTRA_TABS, TAB_NAME } from "./shell";
+import { defaultTabsFor, EXTRA_TABS, TAB_NAME, tabFits } from "./shell";
 import { closeCtx, openMenu } from "./keys";
 import { modeChanged } from "../settings/handlers";
 
-const ALL_TABS = () => [...DEFAULT_TABS, ...EXTRA_TABS].filter(k => TAB_NAME[k]);
+/** the tabs a mode could have: the core ones and the extras that belong in it (tabFits), not the old Pathways */
+const ALL_TABS = (md: Mode) =>
+    [...DEFAULT_TABS, ...EXTRA_TABS].filter(k => TAB_NAME[k] && k !== "paths" && tabFits(md, k));
+/** a mode's tabs, in order: its own list (only those that belong in it), else the defaults */
 export function tabsFor(mode = curMode()) {
     if (Array.isArray(mode.tabs) && mode.tabs.length) {
-        const T = mode.tabs.filter(k => TAB_NAME[k]);
+        const T = mode.tabs.filter(k => TAB_NAME[k] && tabFits(mode, k));
         if (T.length) return T;
     }
     return defaultTabsFor(mode);
@@ -43,7 +46,7 @@ export function tabEditView() {
     return {
         name: md.name,
         on,
-        off: ALL_TABS().filter(k => !on.includes(k)),
+        off: ALL_TABS(md).filter(k => !on.includes(k)),
         home: md.homeTab && on.includes(md.homeTab) ? md.homeTab : "",
     };
 }
@@ -159,7 +162,6 @@ function placeSave() {
                 item: m,
                 y: Math.round(scrollY),
                 learnSub: ui.learnSub,
-                uniSub: ui.uniSub,
                 at: Date.now(),
             })
         );
@@ -181,7 +183,7 @@ export function placeRestore(): boolean {
             ? page
             : "profile";
     ui.tab = typeof tab === "string" && tabsFor(curMode()).includes(tab) ? tab : tabOnEnter(mode);
-    for (const k of ["setSec", "statsView", "listId", "learnSub", "uniSub"]) {
+    for (const k of ["setSec", "statsView", "listId", "learnSub"]) {
         const v = P[k];
         if (typeof v === "string") ui[k] = v;
     }

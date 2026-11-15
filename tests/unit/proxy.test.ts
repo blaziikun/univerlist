@@ -220,6 +220,8 @@ describe("TMDB and IGDB, shared with the site's own pages", () => {
             "/api/tmdb/movie/1/videos",
             "/api/tmdb/search/person",
             "/api/tmdb/movie/abc",
+            "/api/tmdb/movie/1/season/1",
+            "/api/tmdb/tv/1/season/1/episode/2",
         ])
             expect((await proxy(own(p), shared, "/api")).status, p).toBe(400);
         expect(
@@ -229,6 +231,11 @@ describe("TMDB and IGDB, shared with the site's own pages", () => {
             (await proxy(own("/api/tmdb/configuration", { method: "POST", body: "x" }), shared, "/api")).status
         ).toBe(400);
         expect(f).not.toHaveBeenCalled();
+    });
+    it("looks up a show's season, for the player's episode names", async () => {
+        const f = vi.spyOn(globalThis, "fetch").mockImplementation(async () => json({ episodes: [] }));
+        expect((await proxy(own("/api/tmdb/tv/1399/season/2"), shared, "/api")).status).toBe(200);
+        expect(String(f.mock.calls[0][0])).toBe("https://api.themoviedb.org/3/tv/1399/season/2?api_key=tmdb-secret");
     });
     it("adds the key itself, passes on only known settings, and never hands the key back", async () => {
         const f = vi.spyOn(globalThis, "fetch").mockImplementation(async () => json({ results: [] }));
@@ -308,6 +315,24 @@ describe("/page and /status", () => {
         expect(
             (await proxy(new Request(u, { headers: { Origin: "https://other.example" } }), env, "/api")).status
         ).toBe(403);
+    });
+});
+
+describe("/aniskip, for Skip intro", () => {
+    it("asks AniSkip for one episode's opening, for the site's own pages only", async () => {
+        const f = vi.spyOn(globalThis, "fetch").mockResolvedValue(json({ found: true, results: [] }));
+        expect((await proxy(own("/api/aniskip/31478/3"), env, "/api")).status).toBe(200);
+        expect(String(f.mock.calls[0][0])).toBe(
+            "https://api.aniskip.com/v2/skip-times/31478/3?types=op&types=mixed-op&episodeLength=0"
+        );
+        const other = new Request("https://u.dev/api/aniskip/31478/3", { headers: { Origin: "https://evil.example" } });
+        expect((await proxy(other, env, "/api")).status).toBe(403);
+    });
+    it("takes nothing but an anime's number and an episode's", async () => {
+        const f = vi.spyOn(globalThis, "fetch");
+        for (const p of ["/api/aniskip/31478", "/api/aniskip/x/3", "/api/aniskip/1/2/3", "/api/aniskip/1/2.5"])
+            expect((await proxy(own(p), env, "/api")).status, p).toBe(400);
+        expect(f).not.toHaveBeenCalled();
     });
 });
 

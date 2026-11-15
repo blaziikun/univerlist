@@ -2,7 +2,8 @@
     src/features/library/add/AddSearch.svelte
     ─────────────────────────────────────────────────────────────────
       Add's first step: the medium, what to search for (and its type), and what the catalogue found. Picking a result
-      fills in its details and goes on to the form; "Enter it myself" goes straight there.
+      fills in its details and goes on to the form; "Enter it myself" goes straight there. A book can instead go
+      straight into a Learning Centre course (AddToCourse, under the results), without a library entry first.
     ─────────────────────────────────────────────────────────────────
 -->
 
@@ -18,6 +19,8 @@
     import Pic from "../../core/dialog/Pic.svelte";
     import { draftFrom, EXAMPLE, haveIt, searchFor } from "./add";
     import type { Modal } from "../../core/model";
+    import { builtinOn } from "../../extensions/builtins";
+    import AddToCourse from "../../learning-centre/dialogs/AddToCourse.svelte";
 
     let { m }: { m: Modal } = $props();
 
@@ -63,6 +66,13 @@
         if (live !== store.ui.modal) return;
         go({ step: "review", busy: false, coverData: "", q, ikind, private: priv, draft: draftFrom(d, med, ikind) });
     }
+    // the result being added to a Learning Centre course, if any
+    let lcFor = $state<number | null>(null);
+    const lcOn = $derived(med === "book" && builtinOn("learning-centre"));
+    const lcC = $derived.by(() => {
+        const c = lcFor != null ? m.results?.[lcFor] : null;
+        return isCandidate(c) ? c : null;
+    });
     function manual() {
         go({ step: "review", coverData: "", q, ikind, private: priv, draft: { title: q.trim(), medium: m.medium, kind: ikind || (m.medium === "book" ? "Novel" : ""), status: "want", copy: "none" } });
     }
@@ -77,4 +87,5 @@
 <div class="bar"><button class="btn gold" data-act="add-search" disabled={!!m.busy} onclick={search}>{m.busy ? "Searching…" : "Search " + sourceFor(med)}</button><button class="btn ghost" data-act="add-manual" onclick={manual}>Enter it myself</button>{@render privBox()}
     {#if keyless}<span class="hint">Add a free {med === "game" ? "RAWG" : "TMDB"} key in Settings for posters, cast and better matches.</span>{/if}</div>
 {#if m.error}<p class="err">{m.error}</p>{/if}
-{#if m.results}{#if m.results.length}<div class="cands">{#each m.results as c, i}{#if isCandidate(c)}{@const mark = haveIt(c, med)}<button class="cand" data-act="add-pick" data-k={i} onclick={() => pick(i)}>{#if c.cover}<Pic src={c.cover} />{:else}<span class="nocov">No picture</span>{/if}<span class="t">{c.title}</span><span class="hint">{[c.kind || MEDIA[c.medium || med].one, c.year, c.total && ["anime", "tv"].includes(c.medium || med) ? c.total + " eps" : "", c.creator].filter(Boolean).join(" · ")}</span>{#if mark}<span class="pill own">{mark}</span>{/if}</button>{/if}{/each}</div>{:else}<p class="hint">No matches. Try fewer words, or enter it yourself.</p>{/if}{/if}
+{#if m.results}{#if m.results.length}<div class="cands">{#each m.results as c, i}{#if isCandidate(c)}{@const mark = haveIt(c, med)}<div class="candw"><button class="cand" data-act="add-pick" data-k={i} onclick={() => pick(i)}>{#if c.cover}<Pic src={c.cover} />{:else}<span class="nocov">No picture</span>{/if}<span class="t">{c.title}</span><span class="hint">{[c.kind || MEDIA[c.medium || med].one, c.year, c.total && ["anime", "tv"].includes(c.medium || med) ? c.total + " eps" : "", c.creator].filter(Boolean).join(" · ")}</span>{#if mark}<span class="pill own">{mark}</span>{/if}</button>{#if lcOn && (c.medium || med) === "book"}<button class="linkbtn lctobtn" data-act="add-tolc" data-k={i} aria-expanded={lcFor === i} onclick={() => (lcFor = lcFor === i ? null : i)}>＋ Learning Centre</button>{/if}</div>{/if}{/each}</div>
+    {#if lcC}{#key lcFor}<AddToCourse t={lcC.title} a={lcC.creator || ""} year={lcC.year} words={[...(lcC.genres || []), ...(lcC.themes || [])]} done={() => (lcFor = null)} />{/key}{/if}{:else}<p class="hint">No matches. Try fewer words, or enter it yourself.</p>{/if}{/if}

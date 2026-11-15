@@ -4,7 +4,7 @@
 //
 //  A source from an extension may carry `info` (a link that answers { size, downloaded, speed, duration, audio, subs })
 //  and `subs` ([{ label, lang, url }], WebVTT). Everything here is optional: a plain link simply plays.
-//    • Subtitles: the ones that come with the episode are offered under the player; your language is picked by itself.
+//    • Subtitles: the ones that come with the episode are offered under CC; your language is picked by itself.
 //    • The badge on the video says how much is here and how fast the rest is coming.
 //    • "Start when it won't stop" waits just long enough that the rest arrives before you reach it; "Start at once"
 //    plays now
@@ -13,8 +13,9 @@
 //  What a companion answers is someone else's program talking: every field is checked before it's used.
 // ─────────────────────────────────────────────────────────────────
 
-import { fieldsOf, markDirty, meta, numOf, recordsOf, textOf, toast } from "../core/core";
-import { PS, renderPlayer, srvDesc, W } from "./watch";
+import { fieldsOf, numOf, recordsOf, textOf, toast } from "../core/core";
+import { playerSave, PS, renderPlayer, srvDesc, W } from "./watch";
+import { chapterIntro } from "./intro";
 import type { SubTrack, WatchPlayer, WatchSource } from "../core/model";
 import { stageChanged } from "./stage-state.svelte";
 import type { Overlay } from "./player/overlay.svelte";
@@ -50,6 +51,7 @@ interface StreamInfo {
     duration: number; // seconds
     audio: boolean; // it has sound this browser may not play
     subs: unknown;
+    chapters: unknown; // the file's chapters ({ start, end, title }): one may be its opening
 }
 const infoOf = (x: unknown): StreamInfo => {
     const i = fieldsOf(x);
@@ -61,6 +63,7 @@ const infoOf = (x: unknown): StreamInfo => {
         duration: numOf(i.duration) || 0,
         audio: !!i.audio,
         subs: i.subs,
+        chapters: i.chapters,
     };
 };
 // how many seconds to wait so the rest arrives before playback reaches it (0: start now; null: can't tell yet)
@@ -140,17 +143,14 @@ function subShow(v: HTMLVideoElement, url: string | null) {
     const track = url ? TRACKS.get(v)?.get(url) : undefined;
     if (track) track.mode = "showing";
 }
-/** the subtitle picker under the player (Tool.svelte) draws again: a track arrived, or C changed which one shows */
+/** the subtitles' panel (SubsPanel.svelte) draws again: a track arrived, or C changed which one shows */
 export function subRefresh(_p: WatchPlayer) {
     stageChanged("subs");
 }
 export function subChoose(p: WatchPlayer, v: HTMLVideoElement, url: string, remember: boolean) {
     p.subPick = url || "";
     const s = (p.subList || []).find(x => x.url === url);
-    if (remember) {
-        meta.settings.player = { ...PS(), subLang: s ? s.lang || s.label : "off" };
-        markDirty();
-    }
+    if (remember) playerSave({ subLang: s ? s.lang || s.label : "off" });
     if (!s) {
         subShow(v, null);
         return;
@@ -282,6 +282,9 @@ export function streamAttach(v: HTMLVideoElement, src: WatchSource, p: WatchPlay
                 rate = rate ? rate * 0.6 + got.speed * 0.4 : got.speed;
                 if (got.duration) p.dur = got.duration;
                 subOffer(p, v, got.subs);
+                // the file says where its opening is: that's surer than anything looked up
+                const ci = chapterIntro(got.chapters);
+                if (ci) p.intro = ci;
             }
         } catch (_) {}
         draw();

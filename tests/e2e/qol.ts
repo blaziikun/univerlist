@@ -70,6 +70,7 @@ import { ok, evaluator, listen } from "./helpers.ts";
     }, U("a.webm"));
     await ready();
     ok("starts on the first server", await ev(() => __ulTest.W.player!.srcs[__ulTest.W.player!.k].name === "Mine"));
+    await p.click('#cinema [data-act="cin-srcs"]');
     await p.click('#cinema [data-act="cin-src-pick"][data-k="1"]');
     await ready();
     ok("picking Sam's", await ev(() => __ulTest.W.player!.srcs[__ulTest.W.player!.k].name === "Sam"));
