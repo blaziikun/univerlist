@@ -1,0 +1,16 @@
+{
+  // The tests, the tools and the config files. Vitest runs the unit tests; Node runs the rest as they are (its type
+  // stripping, on by default from Node 22.18), so they use only TypeScript that erases to JavaScript (no enums,
+  // namespaces or parameter properties: Node refuses them) and name the .ts file they import. The browser tests'
+  // page.evaluate callbacks run in the page, so the DOM's types are here as well as Node's, and the page's test hook
+  // (window.__ulTest) is typed by hook.d.ts.
+  "extends": "../tsconfig.json",
+  "compilerOptions": {
+    "lib": ["ES2024", "DOM", "DOM.Iterable", "DOM.AsyncIterable"],
+    "types": ["node"],
+    "allowImportingTsExtensions": true
+  },
+  "include": ["**/*.ts", "../tools/*.ts", "../src/env.d.ts", "../worker/env.d.ts", "../svelte.config.ts", "../vite.config.ts"],
+  // wrangler dev leaves its bundle beside the account tests' config (tests/e2e/.wrangler, ignored by git)
+  "exclude": ["**/.wrangler"]
+}

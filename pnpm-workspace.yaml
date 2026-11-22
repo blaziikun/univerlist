@@ -1,0 +1,7 @@
+# pnpm's settings (pnpm 11 and later read them here, not from package.json)
+# Only these may run install scripts: esbuild and workerd fetch their native binaries. The file watcher's is an optional
+# speed-up nobody needs here.
+allowBuilds:
+  esbuild: true
+  workerd: true
+  "@parcel/watcher": false

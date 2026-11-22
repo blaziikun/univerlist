@@ -1,0 +1,30 @@
+// ============ where the browser tests find things ============
+//   APP_URL     the build to test (default: the one-file build with the test hook, dist-file-e2e/index.html)
+//   UL_EXPORT   one of your own exports, to test with real data. Never commit it: point at it in backups/
+//               e.g.  UL_EXPORT=../backups/profile-export_you_2026-01-01.zip pnpm test:e2e
+//   CHROME      a Chromium to use instead of Playwright's own
+import path from "node:path";
+import fs from "node:fs";
+import type { LaunchOptions } from "playwright";
+const ROOT = path.resolve(import.meta.dirname, "../..");
+const OUT = path.join(ROOT, "tests/out");
+fs.mkdirSync(OUT, { recursive: true });
+const EXPORT = process.env.UL_EXPORT ? path.resolve(process.env.UL_EXPORT) : "";
+const launch: LaunchOptions = process.env.CHROME ? { executablePath: process.env.CHROME } : {};
+const ENV = {
+    ROOT,
+    OUT,
+    EXPORT,
+    APP: process.env.APP_URL || "file://" + path.join(ROOT, "dist-file-e2e/index.html"),
+    SITE: path.join(ROOT, "dist-e2e"), // the site build with the test hook (the account and security-header tests)
+    FIX: path.join(ROOT, "tests/fixtures"),
+    EXT: (id: string) => path.join(ROOT, "dist-file-e2e/extensions", id + ".zip"),
+    launch,
+    needExport() {
+        if (!EXPORT || !fs.existsSync(EXPORT)) {
+            console.log("skip  needs UL_EXPORT (one of your exports)");
+            process.exit(0);
+        }
+    },
+};
+export default ENV;

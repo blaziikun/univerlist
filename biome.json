@@ -1,0 +1,66 @@
+{
+    "$schema": "./node_modules/@biomejs/biome/configuration_schema.json",
+    "files": {
+        "includes": [
+            "src/**/*.ts",
+            "worker/**/*.ts",
+            "tools/**/*.ts",
+            "tests/**/*.ts",
+            "extensions/**/*.js",
+            "extensions/**/*.mjs",
+            "!**/node_modules",
+            "!dist",
+            "!dist-file",
+            "!dist-e2e",
+            "!dist-file-e2e",
+            "!**/.wrangler"
+        ]
+    },
+    "formatter": {
+        "enabled": true,
+        "indentStyle": "space",
+        "indentWidth": 4,
+        "lineWidth": 120
+    },
+    "linter": {
+        "enabled": true,
+        "rules": {
+            "preset": "recommended",
+            "style": {
+                "noParameterAssign": "off",
+                "useTemplate": "off",
+                "noNonNullAssertion": "off"
+            },
+            "complexity": {
+                "useOptionalChain": "off",
+                "noForEach": "off"
+            },
+            "suspicious": {
+                "noAssignInExpressions": "off",
+                "noEmptyBlockStatements": "off"
+            }
+        }
+    },
+    "assist": {
+        "enabled": false
+    },
+    "javascript": {
+        "formatter": {
+            "quoteStyle": "double",
+            "trailingCommas": "es5",
+            "arrowParentheses": "asNeeded"
+        }
+    },
+    "overrides": [
+        {
+            "includes": ["tests/**/*.ts"],
+            "linter": {
+                "rules": {
+                    "performance": {
+                        "useDomNodeTextContent": "off"
+                    }
+                }
+            }
+        }
+    ]
+}

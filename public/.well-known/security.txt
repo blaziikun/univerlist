@@ -1,0 +1,6 @@
+# How to report a security problem in UniverList (RFC 9116). Served at both of its addresses.
+Contact: https://univerlist.app/report
+Preferred-Languages: en
+Canonical: https://univerlist.app/.well-known/security.txt
+Canonical: https://univerlist.sayel.dev/.well-known/security.txt
+Expires: 2027-11-01T00:00:00Z

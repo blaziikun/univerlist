@@ -1,0 +1,10 @@
+{
+  // the Worker runs in Cloudflare, not a page: the web's own APIs without the page's (no DOM), plus worker/env.d.ts
+  "extends": "../tsconfig.json",
+  "compilerOptions": {
+    "lib": ["ES2022", "WebWorker"],
+    "types": []
+  },
+  "include": ["*.ts"],
+  "exclude": []
+}

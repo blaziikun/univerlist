@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- UniverList's pages, at its one address (docs/hosting.md: a copy of your own lists its own) -->
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url><loc>https://univerlist.app/</loc></url>
+  <url><loc>https://univerlist.app/privacy.html</loc></url>
+</urlset>

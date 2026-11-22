@@ -1,0 +1,36 @@
+# Security headers for every file the site serves (Cloudflare reads this file; the Worker adds the same to /api).
+# The app's own scripts are files ('self'); nothing inline runs. Pictures and media come from many catalogues and from
+# your own servers (Jellyfin, Plex… often plain http on your network), so those stay open; scripts never do. Frames:
+# the site's own pages (an extension's ext-host.html), a book or PDF you opened (blob:), and the player's YouTube embed,
+# nothing else (tests/e2e/csp.ts checks every embed the app has is allowed).
+/*
+  Content-Security-Policy: default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' https: http: data: blob:; media-src 'self' https: http: data: blob:; font-src 'self' data: https://fonts.gstatic.com; connect-src 'self' https: http: wss:; worker-src 'self' blob:; frame-src 'self' blob: https://www.youtube-nocookie.com; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; manifest-src 'self'
+  Strict-Transport-Security: max-age=31536000; includeSubDomains
+  X-Content-Type-Options: nosniff
+  X-Frame-Options: DENY
+  Referrer-Policy: strict-origin-when-cross-origin
+  Cross-Origin-Opener-Policy: same-origin
+  Cross-Origin-Resource-Policy: same-origin
+  Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=(), usb=(), interest-cohort=()
+
+# Extensions run here, in a sandboxed frame with no access to the app: their code arrives by message and runs inline,
+# so only this page allows inline scripts, and only the app may frame it. The frame is sandboxed by the app's own
+# <iframe sandbox="allow-scripts">, not by a "sandbox" line here: Firefox (and Zen) read 'self' as nothing on a page
+# that sandboxes itself, so frame-ancestors 'self' would refuse the app and no extension would start (tests/e2e/csp.ts).
+# Cloudflare answers /ext-host.html with a redirect to /ext-host, so the rules are on both: on /ext-host.html alone, the
+# page arrived with the app's rules (no framing, no inline code) and no extension started (tests/e2e/ext-on-cloudflare.ts)
+/ext-host.html
+  ! Content-Security-Policy
+  ! X-Frame-Options
+  Content-Security-Policy: default-src 'none'; script-src 'unsafe-inline'; connect-src https: http: wss:; img-src https: data:; frame-ancestors 'self'
+/ext-host
+  ! Content-Security-Policy
+  ! X-Frame-Options
+  Content-Security-Policy: default-src 'none'; script-src 'unsafe-inline'; connect-src https: http: wss:; img-src https: data:; frame-ancestors 'self'
+
+# built files carry a hash of their contents in the name, so a browser can keep them for good
+/assets/*
+  Cache-Control: public, max-age=31536000, immutable
+
+/sw.js
+  Cache-Control: no-cache

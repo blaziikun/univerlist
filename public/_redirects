@@ -1,0 +1,7 @@
+# The project's own addresses, kept in one place. The app, its pages and the docs link here, never to GitHub
+# directly, so if the code moves (another GitHub name, another host) only these lines change. 302, not 301: a
+# browser doesn't keep a 302 for good, so a change takes effect at once.
+/source    https://github.com/blaziikun/univerlist                           302
+/issues    https://github.com/blaziikun/univerlist/issues                    302
+/report    https://github.com/blaziikun/univerlist/security/advisories/new   302
+/sponsor   https://github.com/sponsors/blaziikun                             302

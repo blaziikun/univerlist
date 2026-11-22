@@ -1,0 +1,14 @@
+# Copy to .dev.vars for `pnpm preview` (local only, gitignored). Online, these are Cloudflare secrets:
+#   npx wrangler secret put CLIENT_ID
+PASS=choose-a-password
+TMDB_KEY=
+CLIENT_ID=
+CLIENT_SECRET=
+SGDB_KEY=
+TGDB_KEY=
+CV_KEY=
+HC_KEY=
+SS_DEVID=
+SS_DEVPASS=
+SS_USER=
+SS_PASS=

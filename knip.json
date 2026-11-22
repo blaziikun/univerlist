@@ -1,0 +1,21 @@
+{
+  "$schema": "https://unpkg.com/knip@6/schema.json",
+  "entry": [
+    "worker/*.ts",
+    "tools/*.ts",
+    "tests/**/*.ts",
+    "extensions/**/*.{js,mjs}",
+    "!**/.wrangler/**"
+  ],
+  "project": [
+    "src/**/*.{ts,svelte}",
+    "worker/**/*.ts",
+    "tools/**/*.ts",
+    "tests/**/*.ts",
+    "!**/.wrangler/**"
+  ],
+  "ignoreExportsUsedInFile": {
+    "interface": true,
+    "type": true
+  }
+}

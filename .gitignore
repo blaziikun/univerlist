@@ -1,0 +1,13 @@
+node_modules/
+dist/
+dist-file/
+dist-e2e/
+dist-file-e2e/
+.wrangler/
+.dev.vars
+tests/out/
+*.log
+.DS_Store
+# never in this repo: your exports, private extensions, keys
+*.zip
+!tests/fixtures/*.zip

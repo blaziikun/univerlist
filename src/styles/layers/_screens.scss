@@ -1,0 +1,138 @@
+// src/styles/layers/_screens.scss
+// ─────────────────────────────────────────────────────────────────
+//  Every screen width (ultrawide to phone), the sidebar and library toolbar, and motion.
+// ─────────────────────────────────────────────────────────────────
+
+:root{--ease:cubic-bezier(.2,.8,.2,1);--ease-out:cubic-bezier(.16,1,.3,1);--maxw:1880px}
+
+// ── ultrawide: the content stops growing, the banner and bars stay full-bleed ──
+#app{--side-now:0px;--padx:max(clamp(18px,3.2vw,44px),calc((100vw - var(--side-now) - var(--maxw)) / 2))}
+@media (min-width:861px){#app.side-open{--side-now:var(--side-w)}}
+
+// ── sidebar: rounded rows inset from the edge, names that wrap, three text sizes ──
+#app{--sfs:1}
+#app[data-stext="s"]{--sfs:.9}
+#app[data-stext="l"]{--sfs:1.16}
+#side .side-head{padding:0 10px 0 12px;gap:6px}
+#side .sh-mode{font-size:calc(10px * var(--sfs))}
+.stext{display:inline-flex;align-items:flex-end;gap:1px;flex:0 0 auto;padding:2px;border-radius:8px;background:color-mix(in srgb,var(--text) 5%,transparent)}
+.stext button{border:0;background:none;color:var(--faint);width:20px;height:22px;border-radius:6px;font-family:var(--f-ui);line-height:1;padding:0;display:grid;place-items:center;transition:background .15s var(--ease),color .15s}
+.stext button:hover{color:var(--text)}
+.stext button.on{background:var(--panel3);color:var(--text);box-shadow:0 1px 2px rgba(0,0,0,.25)}
+.stext .st-s{font-size:9.5px}.stext .st-m{font-size:12px}.stext .st-l{font-size:14.5px}
+#side .sl{padding:14px 14px 5px 16px;font-size:calc(9.5px * var(--sfs))}
+#side .nb{width:calc(100% - 12px);margin:1px 6px;padding:calc(6px * var(--sfs)) 10px calc(6px * var(--sfs)) 10px;border-left:0;border-radius:8px;font-size:calc(13px * var(--sfs));line-height:1.3;align-items:center;gap:9px;
+    transition:background .16s var(--ease),color .16s var(--ease),transform .12s var(--ease)}
+#side .nb:active{transform:scale(.985)}
+#side .nb.on{background:color-mix(in srgb,var(--accent) 16%,transparent);color:var(--text);box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--accent) 22%,transparent)}
+#side .nb.on .ic{opacity:1;color:var(--accent-ink)}
+#side .nb.sub{padding-left:34px;font-size:calc(12.5px * var(--sfs))}
+#side .nb .nl{flex:1 1 auto;min-width:0;white-space:normal;overflow-wrap:anywhere;hyphens:auto}
+#side .nb .ct{margin-left:6px;flex:0 0 auto;font-size:calc(10.5px * var(--sfs))}
+#side .nb kbd{margin-left:6px;flex:0 0 auto}
+#side .nb .x{flex:0 0 auto}
+#side .nb .ic{font-size:calc(12.5px * var(--sfs))}
+#side .scont{padding:4px 10px 4px 16px;grid-template-columns:calc(30px * var(--sfs)) minmax(0,1fr) auto}
+#side .sc-c,#side .sc-c .cover{width:calc(30px * var(--sfs))}
+#side .sc-t b{white-space:normal;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;font-size:calc(12.5px * var(--sfs));line-height:1.25}
+#side .sc-t span{font-size:calc(11px * var(--sfs))}
+#side .sdiv{margin:10px 16px}
+#side .tiny{padding:6px 16px;font-size:calc(11.5px * var(--sfs))}
+#side .sgroup + .sgroup{margin-top:2px}
+#side .sgroup .sbody{animation:sbody .2s var(--ease-out)}
+@keyframes sbody{from{opacity:0;transform:translateY(-3px)}to{opacity:1;transform:none}}
+
+// ── library toolbar: what to show on the left, how to show it on the right ──
+.libbar{gap:12px;margin-bottom:10px}
+.lb-scope{display:flex;align-items:center;min-width:0}
+.statuschips{margin-bottom:0}
+.libctl{display:flex;align-items:center;justify-content:space-between;gap:10px 16px;flex-wrap:wrap;padding:8px;border:1px solid var(--line);border-radius:calc(var(--r) + 2px);
+    background:color-mix(in srgb,var(--panel) 72%,transparent);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px)}
+.lb-left,.lb-right{display:flex;align-items:center;gap:8px;flex-wrap:wrap;min-width:0}
+.lb-right{margin-left:auto}
+.lbsel{display:inline-flex;align-items:center;gap:0;border:1px solid var(--line2);border-radius:8px;background:var(--panel);overflow:hidden;font-size:12px;color:var(--muted);height:30px}
+.lbsel .lbk{padding:0 4px 0 10px;font-family:var(--f-mono);font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--faint)}
+.lbsel .sel{border:0;background:transparent;height:100%;padding:0 26px 0 4px;font-size:12.5px;color:var(--text)}
+.lbsel.mixed .lbk::after{content:"•";color:var(--accent);margin-left:4px}
+.libctl .fbtn,.libctl .btn.sm{height:30px;display:inline-flex;align-items:center;gap:6px}
+.libctl .seg.views{height:30px;border-radius:8px}
+.libctl .seg.views button{padding:0 11px}
+.libctl .sizer{height:30px;box-sizing:border-box}
+.lb-sizes{display:inline-flex;gap:6px}
+.lb-sizes-pop{display:none;flex-direction:column;gap:6px}
+.lb-sizes-pop .sizer{justify-content:space-between}
+.lb-sizes-pop .sizer input[type=range]{flex:1;width:auto}
+.lb-more{width:30px;justify-content:center;padding:0}
+@media (max-width:1180px){.lb-sizes{display:none}.lb-sizes-pop{display:flex}}
+@media (max-width:860px){
+    .lb-scope,.shelfchips{margin:0 calc(-1 * var(--padx));padding:0 var(--padx);overflow-x:auto;scrollbar-width:none;-webkit-mask-image:linear-gradient(90deg,transparent,#000 var(--padx),#000 calc(100% - var(--padx)),transparent)}
+    .lb-scope::-webkit-scrollbar,.shelfchips::-webkit-scrollbar{display:none}
+    .lb-scope .chips,.shelfchips{flex-wrap:nowrap}
+    .shelfchips{display:flex}
+    .libctl{padding:6px;gap:8px}
+    .lb-left{flex:1 1 100%;flex-wrap:nowrap}
+    .lb-left .lbsel{flex:1 1 0;min-width:0}
+    .lb-left .lbsel .sel{flex:1;min-width:0;width:100%}
+    .lb-right{flex:1 1 100%;margin-left:0;flex-wrap:nowrap}
+    .lb-right .seg.views{flex:1 1 auto}
+    .lb-right .seg.views button{flex:1;justify-content:center}
+    .libctl .fbtn span:not(.fcount){display:none}
+}
+
+// ── the group plaques line up with the toolbar ──
+.plaque{align-items:center}
+.plaque .gsortl{display:inline-flex;align-items:center;gap:6px}
+
+// ── phone: modals become sheets that rise from the bottom ──
+@media (max-width:640px){
+    .modal,.modal.wide,.modal.wide:has(.item7){left:0;right:0;top:auto;bottom:0;transform:none;width:100%;max-height:calc(100% - env(safe-area-inset-top,0px) - 18px);border-radius:18px 18px 0 0;border-bottom:0;
+        padding-bottom:env(safe-area-inset-bottom,0px);animation:sheet .32s var(--ease-out)}
+    .modal::before{content:"";display:block;position:sticky;top:0;margin:0 auto -6px;width:38px;height:5px;border-radius:3px;background:var(--line2);z-index:3;transform:translateY(7px)}
+}
+@keyframes sheet{from{transform:translateY(40px);opacity:.4}to{transform:none;opacity:1}}
+
+// ── tablet: tabs scroll with a soft edge instead of being cut off ──
+@media (max-width:1100px){.ptabs-in{-webkit-mask-image:linear-gradient(90deg,#000 calc(100% - 28px),transparent)}}
+
+// ── motion: everything presses, eases and respects reduced motion ──
+.btn,.chip,.ib,.seg button,.tile,.card{transition-timing-function:var(--ease)}
+.btn:active,.chip:active,.ib:active,.seg button:active{transform:scale(.97)}
+.chip{transition:background .18s var(--ease),color .18s,border-color .18s,transform .1s}
+:focus-visible{outline:2px solid color-mix(in srgb,var(--accent) 80%,transparent);outline-offset:2px;border-radius:6px}
+.tabbody{animation:none}
+.enter .tabbody,.enter .settings,.enter .features{animation:tabin .28s var(--ease-out)}
+@keyframes tabin{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+::view-transition-old(root),::view-transition-new(root){animation-duration:.22s;animation-timing-function:var(--ease)}
+@media (prefers-reduced-motion:reduce){
+    *,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important;scroll-behavior:auto!important}
+}
+html[data-motion="off"] *,html[data-motion="off"] *::before,html[data-motion="off"] *::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}
+
+// ── phone and tablet item card: cover and title side by side first, then what you do with it, then the story ──
+@media (max-width:860px){
+    .item7{display:grid;grid-template-columns:clamp(96px,18vw,150px) minmax(0,1fr);gap:12px 16px;padding:22px clamp(16px,3vw,26px) 24px;align-items:start}
+    .item7 .iside,.item7 .imain{display:contents}
+    .item7 .icover{grid-column:1;grid-row:1;width:clamp(96px,18vw,150px);height:calc(clamp(96px,18vw,150px) * 1.48);display:block}
+    .item7 .icover .cover{width:clamp(96px,18vw,150px)}
+    .item7 .ihead{grid-column:2;grid-row:1;padding-right:0;align-self:end;min-width:0}
+    .item7 .ihead .navarrows{position:static;justify-content:flex-start;margin:0 0 6px -6px}
+    .item7 .ihead h2{font-size:clamp(20px,calc(var(--fs-title) * .62),30px)}
+    .item7 .ihead .scores{flex-wrap:wrap}
+    .item7 .ibody{scroll-margin-top:48px}
+    .item7 .iside > :not(.icover),.item7 .imain > :not(.ihead){grid-column:1 / -1;min-width:0}
+    .item7 .iside > :not(.icover){order:2}
+    .item7 .itabs,.item7 .ibody,.item7 .imain > .err{order:3}
+    .item7 .iside > .facts,.item7 .iside > .imore{order:4}
+    .item7 .irow{display:flex;flex-wrap:wrap;gap:6px}
+    .item7 .itabs{position:sticky;top:0;z-index:2;background:var(--panel);margin:0 calc(-1 * clamp(16px,3vw,26px));padding:0 clamp(16px,3vw,26px);overflow-x:auto;scrollbar-width:none;flex-wrap:nowrap}
+}
+
+// ── phone top bar: the name on the left, the buttons on the right ──
+@media (max-width:860px){
+    #top .topr{margin-left:auto}
+    #top .top .logo{display:inline-flex;font-size:17px}
+    .shelfchips{margin-bottom:10px}
+}
+@media (max-width:340px){#top .top .logo{display:none}}
+
+@media (min-width:861px){#app.side-open #top .sidebtn{display:none}}

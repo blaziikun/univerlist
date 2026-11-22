@@ -1,0 +1,15 @@
+<!doctype html><meta charset="utf-8"><title>UniverList extension</title>
+<script>
+// The app sends this frame its extension's code once; it runs here, sealed off (sandboxed, its own opaque origin).
+addEventListener("message", function boot(e){
+  var m = e.data; if (!m || m.__ulboot !== 1 || e.source !== parent) return;
+  removeEventListener("message", boot);
+  // the app says what this extension's own code may reach (only its companion); added before its code runs, it narrows
+  // this page's own policy further, never widens it
+  if (typeof m.policy === "string" && /^default-src 'none'; script-src 'unsafe-inline'; connect-src \S+$/.test(m.policy)) {
+    var p = document.createElement("meta"); p.httpEquiv = "Content-Security-Policy"; p.content = m.policy; document.head.appendChild(p);
+  }
+  var s = document.createElement("script"); s.textContent = String(m.sdk) + "\n;\n" + String(m.code); document.head.appendChild(s);
+});
+parent.postMessage({ __ulready: 1 }, "*");
+</script>

@@ -1,0 +1,128 @@
+// src/styles/layers/_backdrops.scss
+// ─────────────────────────────────────────────────────────────────
+//  Backdrops: the living layer behind each theme.
+// ─────────────────────────────────────────────────────────────────
+
+#amb{position:fixed;inset:0;z-index:-1;pointer-events:none;overflow:hidden;contain:strict}
+#amb i{position:absolute;inset:0;display:block;will-change:transform,opacity}
+html[data-backdrop="none"] #amb,html:not([data-backdrop]) #amb{display:none}
+/* a backdrop you made (src/features/backdrops) is one canvas */
+#amb canvas.mybackdrop{position:absolute;inset:0;width:100%;height:100%;display:block}
+html[data-amb="off"] #amb i{animation:none!important}
+html[data-hidden-tab="1"] #amb i{animation-play-state:paused!important}
+/* scroll and pointer follow only in "alive" */
+html:not([data-amb="alive"]){--sy:0;--mx:0;--my:0}
+:root{--sy:0;--mx:0;--my:0}
+
+// ── deep space: three depths of stars, a nebula that breathes, the odd shooting star ──
+html[data-backdrop="cosmos"] #amb .a1{inset:-20%;background:
+    radial-gradient(1px 1px at 10% 20%,#fff 60%,transparent),radial-gradient(1px 1px at 30% 65%,#fff 60%,transparent),radial-gradient(1px 1px at 70% 40%,#e8ecff 60%,transparent),
+    radial-gradient(1px 1px at 85% 75%,#fff 60%,transparent),radial-gradient(1px 1px at 50% 90%,#fff 60%,transparent),radial-gradient(1px 1px at 20% 85%,#dfe6ff 60%,transparent);
+    background-size:230px 230px,310px 310px,270px 270px,190px 190px,350px 350px,260px 260px;opacity:.45;
+    transform:translate3d(calc(var(--mx) * -8px),calc(var(--sy) * -.03px + var(--my) * -8px),0);animation:twinkle 7s ease-in-out infinite alternate}
+html[data-backdrop="cosmos"] #amb .a2{inset:-20%;background:
+    radial-gradient(1.6px 1.6px at 15% 30%,#fff 50%,transparent),radial-gradient(2px 2px at 60% 15%,color-mix(in srgb,var(--hi) 70%,#fff) 40%,transparent),radial-gradient(1.4px 1.4px at 80% 60%,#fff 50%,transparent),radial-gradient(1.8px 1.8px at 35% 80%,#fff 50%,transparent);
+    background-size:520px 520px,640px 640px,470px 470px,580px 580px;opacity:.7;
+    transform:translate3d(calc(var(--mx) * -22px),calc(var(--sy) * -.08px + var(--my) * -18px),0);animation:twinkle 11s ease-in-out infinite alternate-reverse}
+html[data-backdrop="cosmos"] #amb .a3{inset:-30%;background:radial-gradient(ellipse 38% 26% at 72% 22%,color-mix(in srgb,var(--hi) 16%,transparent),transparent 70%),radial-gradient(ellipse 30% 22% at 22% 70%,color-mix(in srgb,#7a5cff 10%,transparent),transparent 70%),radial-gradient(ellipse 24% 18% at 55% 55%,color-mix(in srgb,#3fc1ff 6%,transparent),transparent 70%);
+    filter:blur(8px);animation:nebula 60s ease-in-out infinite alternate;transform:translate3d(calc(var(--mx) * -12px),calc(var(--sy) * -.02px),0)}
+html[data-backdrop="cosmos"] #amb .a4{inset:auto;top:12%;left:-20%;width:220px;height:1.5px;background:linear-gradient(90deg,transparent,#fff 70%,transparent);opacity:0;transform:rotate(-14deg);animation:shoot 19s linear infinite 4s}
+@keyframes twinkle{from{opacity:.35}to{opacity:.8}}
+@keyframes nebula{from{transform:translate3d(-2%,0,0) scale(1);opacity:.8}to{transform:translate3d(2%,-2%,0) scale(1.08);opacity:1}}
+@keyframes shoot{0%,92%{opacity:0;transform:translate3d(0,0,0) rotate(-14deg)}93%{opacity:.9}100%{opacity:0;transform:translate3d(120vw,30vh,0) rotate(-14deg)}}
+
+// ── picture house: a projector beam from above, dust in the light, a breathing flicker ──
+html[data-backdrop="cinema"] #amb .a1{background:conic-gradient(from 180deg at 50% -45%,transparent 158deg,color-mix(in srgb,var(--accent) 8%,transparent) 168deg,color-mix(in srgb,#fff6e0 13%,transparent) 180deg,color-mix(in srgb,var(--accent) 8%,transparent) 192deg,transparent 202deg);
+    -webkit-mask:linear-gradient(#000 35%,transparent 100%);mask:linear-gradient(#000 35%,transparent 100%);animation:flicker 5s steps(30) infinite;transform:translateY(calc(var(--sy) * -.04px))}
+html[data-backdrop="cinema"] #amb .a2{inset:10% 22% 0;background:radial-gradient(1.2px 1.2px at 20% 30%,rgba(255,240,210,.7),transparent),radial-gradient(1px 1px at 60% 50%,rgba(255,240,210,.6),transparent),radial-gradient(1.5px 1.5px at 40% 80%,rgba(255,240,210,.5),transparent),radial-gradient(1px 1px at 80% 20%,rgba(255,240,210,.6),transparent);
+    background-size:180px 220px,240px 200px,210px 260px,160px 190px;-webkit-mask:radial-gradient(ellipse 50% 70% at 50% 20%,#000,transparent);mask:radial-gradient(ellipse 50% 70% at 50% 30%,#000,transparent);animation:dust 40s linear infinite;opacity:.8}
+html[data-backdrop="cinema"] #amb .a3{background:radial-gradient(ellipse 90% 70% at 50% 40%,transparent 50%,rgba(0,0,0,.55) 100%)}
+html[data-backdrop="cinema"] #amb .a4{inset:-50%;background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='1.1' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 .07 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");animation:grain 1.2s steps(6) infinite}
+@keyframes flicker{0%,100%{opacity:1}7%{opacity:.86}9%{opacity:1}48%{opacity:.94}50%{opacity:1}77%{opacity:.9}79%{opacity:1}}
+@keyframes dust{from{background-position:0 0,0 0,0 0,0 0}to{background-position:60px -440px,-80px -400px,40px -520px,-30px -380px}}
+@keyframes grain{0%{transform:translate(0,0)}20%{transform:translate(-3%,2%)}40%{transform:translate(2%,-3%)}60%{transform:translate(-2%,-1%)}80%{transform:translate(3%,3%)}100%{transform:translate(0,0)}}
+
+// ── reading room: lamplight from the corner, warm and slightly unsteady, deep edges ──
+html[data-backdrop="study"] #amb .a1{inset:-10%;background:radial-gradient(ellipse 55% 45% at 14% 4%,color-mix(in srgb,var(--accent) 22%,transparent),transparent 70%),radial-gradient(ellipse 30% 25% at 90% 100%,color-mix(in srgb,var(--hi) 6%,transparent),transparent 70%);animation:lamp 9s ease-in-out infinite alternate;
+    transform:translate3d(calc(var(--mx) * 10px),calc(var(--sy) * -.02px),0)}
+html[data-backdrop="study"] #amb .a2{background:radial-gradient(ellipse 85% 75% at 50% 45%,transparent 55%,rgba(10,5,2,.6) 100%)}
+html[data-backdrop="study"] #amb .a3{inset:0 0 0 auto;width:38%;background:repeating-linear-gradient(90deg,transparent 0 46px,rgba(0,0,0,.08) 46px 48px,transparent 48px 96px);-webkit-mask:linear-gradient(90deg,transparent,#000 70%);mask:linear-gradient(90deg,transparent,#000 70%);opacity:.6}
+@keyframes lamp{0%{opacity:.85}40%{opacity:1}55%{opacity:.92}100%{opacity:1}}
+
+// ── old library: a banker's lamp glow, motes drifting through it ──
+html[data-backdrop="library"] #amb .a1{inset:-10%;background:radial-gradient(ellipse 50% 32% at 50% -2%,color-mix(in srgb,var(--hi) 15%,transparent),transparent 72%),radial-gradient(ellipse 40% 30% at 50% 0%,color-mix(in srgb,var(--accent) 10%,transparent),transparent 70%);animation:lamp 12s ease-in-out infinite alternate;transform:translateY(calc(var(--sy) * -.03px))}
+html[data-backdrop="library"] #amb .a2{inset:0 20%;background:radial-gradient(1px 1px at 30% 30%,rgba(255,250,220,.5),transparent),radial-gradient(1.3px 1.3px at 70% 60%,rgba(255,250,220,.4),transparent),radial-gradient(1px 1px at 50% 85%,rgba(255,250,220,.45),transparent);
+    background-size:200px 240px,260px 220px,230px 280px;-webkit-mask:radial-gradient(ellipse 60% 50% at 50% 10%,#000,transparent);mask:radial-gradient(ellipse 60% 50% at 50% 10%,#000,transparent);animation:dust 70s linear infinite}
+html[data-backdrop="library"] #amb .a3{background:radial-gradient(ellipse 90% 80% at 50% 40%,transparent 60%,rgba(0,8,4,.5) 100%)}
+
+// ── arcade: the grid runs toward you, scanlines over everything, the horizon pulses ──
+html[data-backdrop="arcade"] #amb .a1{inset:auto -50% -10% -50%;height:55%;background:linear-gradient(color-mix(in srgb,var(--accent) 28%,transparent) 1px,transparent 1px) 0 0/64px 48px,linear-gradient(90deg,color-mix(in srgb,var(--hi) 22%,transparent) 1px,transparent 1px) 0 0/64px 48px;
+    transform:perspective(420px) rotateX(62deg);transform-origin:50% 0;-webkit-mask:linear-gradient(transparent,#000 60%);mask:linear-gradient(transparent,#000 60%);animation:runway 3.2s linear infinite;opacity:.55}
+html[data-backdrop="arcade"] #amb .a2{inset:auto 0 30% 0;height:30%;background:radial-gradient(ellipse 60% 100% at 50% 100%,color-mix(in srgb,var(--hi) 22%,transparent),transparent 70%);animation:pulse 4s ease-in-out infinite alternate}
+html[data-backdrop="arcade"] #amb .a3{background:repeating-linear-gradient(0deg,rgba(0,0,0,.18) 0 1px,transparent 1px 3px);opacity:.55}
+html[data-backdrop="arcade"] #amb .a4{background:radial-gradient(ellipse 80% 70% at 50% 50%,transparent 60%,rgba(0,0,0,.5))}
+html[data-backdrop="arcade"] body::before{-webkit-mask:linear-gradient(#000,transparent 40%);mask:linear-gradient(#000,transparent 40%)}
+@keyframes runway{from{background-position:0 0,0 0}to{background-position:0 48px,0 0}}
+@keyframes pulse{from{opacity:.6}to{opacity:1}}
+
+// ── city night: a slow aurora of the accent, glass-clean otherwise ──
+html[data-backdrop="night"] #amb .a1{inset:-20% -10% 40%;background:linear-gradient(115deg,transparent 30%,color-mix(in srgb,var(--accent) 10%,transparent) 45%,color-mix(in srgb,var(--hi) 8%,transparent) 55%,transparent 70%);filter:blur(30px);animation:aurora 38s ease-in-out infinite alternate;transform-origin:50% 0}
+html[data-backdrop="night"] #amb .a2{inset:auto 0 0;height:40%;background:linear-gradient(transparent,color-mix(in srgb,var(--bg) 60%,#000))}
+@keyframes aurora{from{transform:translate3d(-8%,0,0) skewX(-6deg)}to{transform:translate3d(8%,4%,0) skewX(6deg)}}
+
+// ── ink & paper: a red sun behind the page, halftone in the corners, speed lines at rest ──
+html[data-backdrop="ink"] #amb .a1{inset:auto;top:22vh;right:-16vmin;width:64vmin;height:64vmin;border-radius:50%;background:radial-gradient(circle,color-mix(in srgb,var(--accent) 34%,transparent) 0 48%,color-mix(in srgb,var(--accent) 10%,transparent) 58%,transparent 70%);filter:blur(2px);
+    animation:sun 14s ease-in-out infinite alternate;transform:translate3d(calc(var(--mx) * -14px),calc(var(--sy) * -.06px),0)}
+html[data-backdrop="ink"] #amb .a2{background-image:radial-gradient(color-mix(in srgb,var(--accent) 40%,transparent) 1.1px,transparent 1.6px);background-size:9px 9px;
+    -webkit-mask:radial-gradient(ellipse 50% 45% at 0% 100%,#000,transparent 70%);mask:radial-gradient(ellipse 50% 45% at 0% 100%,#000,transparent 70%);opacity:.5}
+html[data-backdrop="ink"] #amb .a3{background:repeating-conic-gradient(from 0deg at 105% -5%,transparent 0 2.2deg,color-mix(in srgb,var(--text) 3.5%,transparent) 2.2deg 2.6deg);-webkit-mask:linear-gradient(200deg,#000,transparent 55%);mask:linear-gradient(200deg,#000,transparent 55%);opacity:.8}
+html[data-backdrop="ink"] #amb .a4{background:radial-gradient(ellipse 90% 80% at 50% 50%,transparent 55%,rgba(10,0,0,.55))}
+@keyframes sun{from{opacity:.75;transform:scale(1)}to{opacity:1;transform:scale(1.04)}}
+
+// ── rain: fine streaks falling, a cold lamp at the top ──
+html[data-backdrop="noir"] #amb .a1{inset:-20% -20% 0;background:repeating-linear-gradient(105deg,transparent 0 22px,rgba(255,255,255,.035) 22px 23px,transparent 23px 61px);animation:rain .9s linear infinite}
+html[data-backdrop="noir"] #amb .a2{inset:-20% -20% 0;background:repeating-linear-gradient(103deg,transparent 0 37px,rgba(255,255,255,.025) 37px 38px,transparent 38px 89px);animation:rain 1.4s linear infinite}
+html[data-backdrop="noir"] #amb .a3{background:radial-gradient(ellipse 45% 35% at 50% -5%,color-mix(in srgb,var(--accent) 14%,transparent),transparent 70%),radial-gradient(ellipse 90% 80% at 50% 50%,transparent 55%,rgba(0,0,0,.55))}
+@keyframes rain{from{transform:translate3d(0,-60px,0)}to{transform:translate3d(-16px,0,0)}}
+
+// ── each backdrop reaches into the page a little ──
+html[data-backdrop="cinema"] .ptabs button[aria-selected="true"]{text-shadow:0 0 18px color-mix(in srgb,var(--accent) 60%,transparent)}
+html[data-backdrop="cinema"] .cover{box-shadow:0 14px 30px -18px rgba(0,0,0,.9)}
+html[data-backdrop="study"] .panel,html[data-backdrop="library"] .panel{box-shadow:inset 0 1px 0 color-mix(in srgb,var(--text) 5%,transparent),0 18px 40px -30px rgba(0,0,0,.8)}
+html[data-backdrop="study"] .plaque h3,html[data-backdrop="library"] .plaque h3{font-style:italic}
+html[data-backdrop="arcade"] .chip[aria-pressed="true"],html[data-backdrop="arcade"] .btn.gold{box-shadow:0 0 14px color-mix(in srgb,var(--accent) 55%,transparent),0 0 2px var(--accent)}
+html[data-backdrop="arcade"] .ptabs button[aria-selected="true"]{text-shadow:0 0 10px var(--accent)}
+html[data-backdrop="ink"] .plaque h3{position:relative}
+html[data-backdrop="ink"] .plaque h3::after{content:"";position:absolute;left:0;right:-6px;bottom:-3px;height:5px;background:var(--accent);opacity:.75;transform:skewX(-18deg);clip-path:polygon(0 30%,100% 0,98% 100%,2% 80%)}
+html[data-backdrop="cosmos"] .pbanner .avatar{box-shadow:0 0 0 1px rgba(255,255,255,.08),0 0 40px -6px color-mix(in srgb,var(--hi) 45%,transparent)}
+html[data-backdrop="noir"] .cover img{filter:saturate(.85) contrast(1.05)}
+html[data-backdrop="noir"] .cover:hover img{filter:none}
+
+/* phones: lighter layers, no pointer follow */
+@media (max-width:640px){
+    html[data-backdrop="arcade"] #amb .a3,html[data-backdrop="cinema"] #amb .a4{display:none}
+    html[data-backdrop="noir"] #amb .a2{display:none}
+}
+
+/* theme changes cross-fade instead of snapping */
+body{transition:background-color .5s var(--ease)}
+.panel,.ptabs,.libctl,.chip,.btn,.seg,#side.side,.pbanner{transition-property:background-color,border-color,color,box-shadow,transform;transition-duration:.35s;transition-timing-function:var(--ease)}
+/* back to top */
+.totop{position:fixed;right:max(18px,env(safe-area-inset-right,0px));bottom:calc(22px + env(safe-area-inset-bottom,0px));z-index:40;width:42px;height:42px;border-radius:50%;display:grid;place-items:center;
+    border:1px solid var(--line2);background:color-mix(in srgb,var(--panel) 82%,transparent);color:var(--text);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);box-shadow:var(--shadow);
+    opacity:0;transform:translateY(12px) scale(.9);pointer-events:none;transition:opacity .25s var(--ease),transform .3s var(--ease-out)}
+.totop.on{opacity:1;transform:none;pointer-events:auto}
+.totop:hover{border-color:var(--accent)}
+body:has(#bulk) .totop{bottom:96px}
+
+// ── falling petals: a few blossoms drifting down past a soft evening glow ──
+html[data-backdrop="blossom"] #amb .a1{inset:-10% 0 0;background:
+    radial-gradient(5px 3px at 12% 8%,color-mix(in srgb,var(--accent) 70%,#fff) 60%,transparent 70%),radial-gradient(4px 3px at 38% 22%,color-mix(in srgb,var(--accent) 60%,#fff) 60%,transparent 70%),
+    radial-gradient(6px 4px at 66% 12%,color-mix(in srgb,var(--accent) 55%,#fff) 60%,transparent 70%),radial-gradient(4px 3px at 84% 30%,color-mix(in srgb,var(--accent) 70%,#fff) 60%,transparent 70%),
+    radial-gradient(5px 3px at 24% 44%,color-mix(in srgb,var(--accent) 60%,#fff) 60%,transparent 70%),radial-gradient(4px 2px at 52% 58%,color-mix(in srgb,var(--accent) 65%,#fff) 60%,transparent 70%);
+    background-size:420px 520px,360px 480px,500px 560px,440px 500px,380px 540px,460px 520px;opacity:.55;animation:petals 26s linear infinite}
+html[data-backdrop="blossom"] #amb .a2{inset:-10% 0 0;background:radial-gradient(7px 4px at 30% 20%,color-mix(in srgb,var(--accent) 50%,#fff) 60%,transparent 70%),radial-gradient(6px 4px at 75% 50%,color-mix(in srgb,var(--hi) 55%,#fff) 60%,transparent 70%);
+    background-size:620px 700px,700px 760px;opacity:.4;animation:petals 40s linear infinite reverse;filter:blur(1px)}
+html[data-backdrop="blossom"] #amb .a3{background:radial-gradient(ellipse 60% 40% at 80% 0%,color-mix(in srgb,var(--accent) 12%,transparent),transparent 70%),radial-gradient(ellipse 50% 40% at 0% 100%,color-mix(in srgb,var(--hi) 7%,transparent),transparent 70%)}
+@keyframes petals{from{background-position:0 0,0 0,0 0,0 0,0 0,0 0}to{background-position:-120px 520px,90px 480px,-60px 560px,140px 500px,-100px 540px,60px 520px}}
+html[data-backdrop="blossom"] .plaque h3{letter-spacing:.02em}
