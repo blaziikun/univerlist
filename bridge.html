@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>UniverList</title>
+<meta name="description" content="Track everything you watch, read and play. Your library stays in your browser.">
+<meta name="theme-color" content="#05060a">
+<!-- the one address search engines and link previews use, whichever address this page was opened at (docs/hosting.md) -->
+<link rel="canonical" href="https://univerlist.app/">
+<!-- bridge.html: the app at the address Pathagoras opens to sync (features/bridge/pathagoras.ts); never indexed -->
+<meta name="robots" content="noindex">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="UniverList">
+<meta property="og:title" content="UniverList">
+<meta property="og:description" content="Track everything you watch, read and play. Your library stays in your browser.">
+<meta property="og:url" content="https://univerlist.app/">
+<meta property="og:image" content="https://univerlist.app/icon-512.png">
+<meta name="twitter:card" content="summary">
+<link rel="icon" href="/icon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="/src/styles/main.scss">
+</head>
+<body style="background:#05060a;margin:0">
+<a class="skip" href="#main">Skip to content</a>
+<div id="app" class="app" data-side="left">
+  <header id="top"></header>
+  <aside class="side" id="side" aria-label="Sidebar"></aside>
+  <div class="scrim side-scrim" data-act="side-toggle"></div>
+  <main class="main" id="main" tabindex="-1"></main>
+</div>
+<div id="overlay"></div>
+<input type="file" id="file-import" accept="application/json,.json,text/csv,.csv,.zip,application/zip,.xml,.gz,text/xml" hidden>
+<input type="file" id="file-cover" accept="image/*" hidden>
+<script id="seed" type="application/json">{"items":{}}</script>
+<script type="module" src="/src/main.ts"></script>
+</body>
+</html>

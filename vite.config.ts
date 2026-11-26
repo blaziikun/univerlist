@@ -53,7 +53,15 @@ export default defineConfig(({ mode }) => {
     publicDir: file ? false : "public",
     // tests use Svelte's browser runtime, so runes and effects run in them as they do in the app (Svelte's testing guide)
     resolve: process.env.VITEST ? { conditions: ["browser"] } : undefined,
-    build: { outDir: (file ? "dist-file" : "dist") + (e2e ? "-e2e" : ""), emptyOutDir: true, target: "es2022", chunkSizeWarningLimit: 4000 },
+    build: {
+      outDir: (file ? "dist-file" : "dist") + (e2e ? "-e2e" : ""),
+      emptyOutDir: true,
+      target: "es2022",
+      chunkSizeWarningLimit: 4000,
+      // bridge.html is the app again, at the one address Pathagoras opens (features/bridge/pathagoras.ts); the one-file
+      // build has no bridge
+      ...(file ? {} : { rollupOptions: { input: { index: "index.html", bridge: "bridge.html" } } }),
+    },
     plugins: [
       svelte(),
       proxyScriptModule(),
@@ -77,7 +85,7 @@ export default defineConfig(({ mode }) => {
           globPatterns: ["**/*.{html,js,css,svg,png}"],
           // ext-host.html is never kept: its security rules are its headers (public/_headers), and a kept copy keeps
           // the headers it came with until the file itself changes, so a fix to them would never reach you
-          globIgnores: ["**/hls-*.js", "ext-host.html"],
+          globIgnores: ["**/hls-*.js", "ext-host.html", "bridge.html"],
           runtimeCaching: [
             {
               urlPattern: ({ url }) => url.pathname.startsWith("/assets/") && /\.(woff2|js)$/.test(url.pathname),
@@ -89,7 +97,8 @@ export default defineConfig(({ mode }) => {
           // the redirects in public/_redirects go to the network, not to the app kept offline
           // ext-host.html too (and /ext-host, where Cloudflare sends it): an extension's frame is a page load, and it must be
           // that page, from the site, never the app
-          navigateFallbackDenylist: [/^\/api\//, /^\/extensions\//, /^\/(source|issues|report|sponsor)$/, /^\/ext-host(\.html)?$/]
+          // and the Pathagoras bridge: it needs the headers only its own address has (public/_headers)
+          navigateFallbackDenylist: [/^\/api\//, /^\/extensions\//, /^\/(source|issues|report|sponsor)$/, /^\/ext-host(\.html)?$/, /^\/bridge(\.html)?$/]
         }
       })
     ]

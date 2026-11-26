@@ -32,6 +32,7 @@ import { closeModal, renderOverlay, useSvelteDialogs } from "./features/core/mod
 import { dropDialog, drawDialog, hasDialog, isDrawn } from "./features/core/dialogs";
 import { drawMenu, dropMenu, menuCatchUp, menuShown } from "./features/core/menus";
 import { useSvelteMenus } from "./features/core/keys";
+import { startPathagorasBridge } from "./features/bridge/pathagoras";
 import { goSettings } from "./features/core/navigation";
 import { isBooted, joinOnStart } from "./features/core/events";
 import { builtinOn } from "./features/extensions/builtins";
@@ -117,6 +118,8 @@ if (atOldAddress()) {
         movedCheck(items.size > 0 || signedIn, () => mount(Moved, { target: document.body, props: { signedIn } }));
     }, 100);
 }
+// opened by Pathagoras to sync its books with this library (features/bridge/pathagoras.ts): asks before anything changes
+startPathagorasBridge();
 // not signed in yet, on the website, with a few things added: once, suggest putting the library on their phone too
 if (location.protocol.startsWith("http") && !syncState().on) nudgeToSync();
 if (location.protocol.startsWith("http") && syncState().on && builtinOn("account")) startAuto();

@@ -34,3 +34,14 @@
 
 /sw.js
   Cache-Control: no-cache
+
+# The Pathagoras bridge (features/bridge/pathagoras.ts): the app at /bridge, opened by Pathagoras in a small window. It
+# talks to the window that opened it, which Cross-Origin-Opener-Policy: same-origin would cut off, so here (and only
+# here) the policy lets the opener stay. Everything else about the page's rules is the app's. On both addresses, since
+# Cloudflare sends /bridge.html to /bridge.
+/bridge.html
+  ! Cross-Origin-Opener-Policy
+  Cross-Origin-Opener-Policy: unsafe-none
+/bridge
+  ! Cross-Origin-Opener-Policy
+  Cross-Origin-Opener-Policy: unsafe-none
