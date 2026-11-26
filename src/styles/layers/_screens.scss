@@ -136,3 +136,9 @@ html[data-motion="off"] *,html[data-motion="off"] *::before,html[data-motion="of
 @media (max-width:340px){#top .top .logo{display:none}}
 
 @media (min-width:861px){#app.side-open #top .sidebtn{display:none}}
+
+// the Pathagoras bridge's question (features/bridge/pathagoras.ts), over the app in its small window
+.bridge-ask{position:fixed;inset:auto 16px 16px;z-index:200;max-width:460px;margin:0 auto;padding:18px 20px;border-radius:12px;background:var(--panel2,#15171d);border:1px solid var(--line,#2a2d36);box-shadow:0 18px 40px rgba(0,0,0,.5)}
+.bridge-ask h2{margin:0 0 8px;font-size:18px}
+.bridge-ask p{margin:0 0 8px;font-size:14px;line-height:1.45}
+.bridge-ask .row{display:flex;gap:8px;margin-top:12px}
